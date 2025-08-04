@@ -10,15 +10,21 @@ IronPawProfitMainFrame = {}
 function IronPawProfitMainFrame:Initialize(mainAddon)
     self.addon = mainAddon
     
+    -- Attach functions to the main addon
+    self:AttachFunctions()
+    
     -- Create main frame
     function self.addon:CreateMainFrame()
     if self.mainFrame then
         return self.mainFrame
     end
     
+    -- Store addon reference for closures
+    local addon = self
+    
     -- Main frame
     local frame = CreateFrame("Frame", "IronPawProfitMainFrame", UIParent, "BasicFrameTemplateWithInset")
-    frame:SetSize(600, 500)
+    frame:SetSize(700, 600)
     frame:SetPoint("CENTER")
     frame:SetMovable(true)
     frame:EnableMouse(true)
@@ -32,12 +38,47 @@ function IronPawProfitMainFrame:Initialize(mainAddon)
     frame.title:SetPoint("TOP", frame, "TOP", 0, -5)
     frame.title:SetText("IronPaw Profit Calculator")
     
-    -- Close button (already provided by BasicFrameTemplate)
+    -- Create tab system
+    frame.tabs = {}
+    frame.activeTab = 1
     
-    -- Token display
-    frame.tokenDisplay = CreateFrame("Frame", nil, frame)
+    -- Tab button creation function
+    local function CreateTab(parent, text, index)
+        local tab = CreateFrame("Button", nil, parent, "GameMenuButtonTemplate")
+        tab:SetSize(120, 25)
+        tab:SetText(text)
+        tab:SetPoint("TOPLEFT", parent, "TOPLEFT", 20 + (index - 1) * 125, -25)
+        
+        tab:SetScript("OnClick", function()
+            addon:ShowTab(index)
+        end)
+        
+        return tab
+    end
+    
+    -- Create tabs
+    frame.tabs[1] = CreateTab(frame, "Nam Ironpaw", 1)
+    frame.tabs[2] = CreateTab(frame, "Token Arbitrage", 2)
+    frame.tabs[3] = CreateTab(frame, "Raw Materials", 3)
+    
+    -- Tab content panels
+    frame.tabPanels = {}
+    
+    -- Create content area for tabs
+    local contentY = -55
+    
+    -- Create content area for tabs
+    local contentY = -55
+    
+    -- TAB 1: Nam Ironpaw (Original functionality)
+    frame.tabPanels[1] = CreateFrame("Frame", nil, frame)
+    frame.tabPanels[1]:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, contentY)
+    frame.tabPanels[1]:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
+    
+    -- Token display (Tab 1)
+    frame.tokenDisplay = CreateFrame("Frame", nil, frame.tabPanels[1])
     frame.tokenDisplay:SetSize(200, 30)
-    frame.tokenDisplay:SetPoint("TOPLEFT", frame, "TOPLEFT", 20, -30)
+    frame.tokenDisplay:SetPoint("TOPLEFT", frame.tabPanels[1], "TOPLEFT", 20, -10)
     
     frame.tokenDisplay.icon = frame.tokenDisplay:CreateTexture(nil, "ARTWORK")
     frame.tokenDisplay.icon:SetSize(20, 20)
@@ -48,68 +89,68 @@ function IronPawProfitMainFrame:Initialize(mainAddon)
     frame.tokenDisplay.text:SetPoint("LEFT", frame.tokenDisplay.icon, "RIGHT", 5, 0)
     frame.tokenDisplay.text:SetText("Tokens: 0")
     
-    -- Scan button
-    frame.scanButton = CreateFrame("Button", nil, frame, "GameMenuButtonTemplate")
+    -- Scan button (Tab 1)
+    frame.scanButton = CreateFrame("Button", nil, frame.tabPanels[1], "GameMenuButtonTemplate")
     frame.scanButton:SetSize(100, 25)
-    frame.scanButton:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -20, -30)
+    frame.scanButton:SetPoint("TOPRIGHT", frame.tabPanels[1], "TOPRIGHT", -20, -10)
     frame.scanButton:SetText("Scan AH")
     frame.scanButton:SetScript("OnClick", function()
-        IronPawProfit:RefreshAuctionData()
+        addon:RefreshAuctionData()
     end)
     
-    -- Category dropdown
-    frame.categoryDropdown = CreateFrame("Frame", "IronPawCategoryDropdown", frame, "UIDropDownMenuTemplate")
+    -- Category dropdown (Tab 1)
+    frame.categoryDropdown = CreateFrame("Frame", "IronPawCategoryDropdown", frame.tabPanels[1], "UIDropDownMenuTemplate")
     frame.categoryDropdown:SetPoint("TOPLEFT", frame.tokenDisplay, "BOTTOMLEFT", -15, -10)
     UIDropDownMenu_SetWidth(frame.categoryDropdown, 120)
     UIDropDownMenu_SetText(frame.categoryDropdown, "All Categories")
     
-    -- Initialize dropdown
+    -- Initialize dropdown (Tab 1)
     UIDropDownMenu_Initialize(frame.categoryDropdown, function(self, level)
-        local categories = IronPawProfit.Categories or {"All", "Meat", "Seafood", "Vegetable", "Fruit", "Reagent", "Bundle"}
+        local categories = addon.Categories or {"All", "Meat", "Seafood", "Vegetable", "Fruit", "Reagent", "Bundle"}
         for _, category in ipairs(categories) do
             local info = UIDropDownMenu_CreateInfo()
             info.text = category
             info.value = category
             info.func = function()
                 UIDropDownMenu_SetSelectedValue(frame.categoryDropdown, category)
-                IronPawProfit:FilterByCategory(category)
+                addon:FilterByCategory(category)
             end
             UIDropDownMenu_AddButton(info, level)
         end
     end)
     
-    -- Profit threshold controls
-    frame.thresholdLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    -- Profit threshold controls (Tab 1)
+    frame.thresholdLabel = frame.tabPanels[1]:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     frame.thresholdLabel:SetPoint("TOPLEFT", frame.categoryDropdown, "BOTTOMLEFT", 15, -10)
     frame.thresholdLabel:SetText("Min Profit:")
     
-    frame.thresholdEditBox = CreateFrame("EditBox", nil, frame, "InputBoxTemplate")
+    frame.thresholdEditBox = CreateFrame("EditBox", nil, frame.tabPanels[1], "InputBoxTemplate")
     frame.thresholdEditBox:SetSize(60, 20)
     frame.thresholdEditBox:SetPoint("LEFT", frame.thresholdLabel, "RIGHT", 5, 0)
-    frame.thresholdEditBox:SetText(tostring(IronPawProfit.db.profile.minProfit or 1))
-    frame.thresholdEditBox:SetScript("OnEnterPressed", function(self)
-        local value = tonumber(self:GetText()) or 1
-        IronPawProfit.db.profile.minProfit = value
-        IronPawProfit:UpdateProfitCalculations()
-        self:ClearFocus()
+    frame.thresholdEditBox:SetText(tostring(addon.db.profile.minProfit or 1))
+    frame.thresholdEditBox:SetScript("OnEnterPressed", function(editbox)
+        local value = tonumber(editbox:GetText()) or 1
+        addon.db.profile.minProfit = value
+        addon:UpdateProfitCalculations()
+        editbox:ClearFocus()
     end)
     
-    frame.goldLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    frame.goldLabel = frame.tabPanels[1]:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     frame.goldLabel:SetPoint("LEFT", frame.thresholdEditBox, "RIGHT", 5, 0)
     frame.goldLabel:SetText("gold")
     
-    -- Update button
-    frame.updateButton = CreateFrame("Button", nil, frame, "GameMenuButtonTemplate")
+    -- Update button (Tab 1)
+    frame.updateButton = CreateFrame("Button", nil, frame.tabPanels[1], "GameMenuButtonTemplate")
     frame.updateButton:SetSize(80, 25)
     frame.updateButton:SetPoint("LEFT", frame.goldLabel, "RIGHT", 20, 0)
     frame.updateButton:SetText("Update")
     frame.updateButton:SetScript("OnClick", function()
-        IronPawProfit:UpdateProfitCalculations()
+        addon:UpdateProfitCalculations()
     end)
     
-    -- Summary panel
-    frame.summaryPanel = CreateFrame("Frame", nil, frame, "BackdropTemplate")
-    frame.summaryPanel:SetSize(560, 60)
+    -- Summary panel (Tab 1)
+    frame.summaryPanel = CreateFrame("Frame", nil, frame.tabPanels[1], "BackdropTemplate")
+    frame.summaryPanel:SetSize(660, 60)
     frame.summaryPanel:SetPoint("TOPLEFT", frame.thresholdLabel, "BOTTOMLEFT", 0, -20)
     frame.summaryPanel:SetBackdrop({
         bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
@@ -120,7 +161,7 @@ function IronPawProfitMainFrame:Initialize(mainAddon)
     frame.summaryPanel:SetBackdropColor(0, 0, 0, 0.25)
     frame.summaryPanel:SetBackdropBorderColor(0.4, 0.4, 0.4)
     
-    -- Summary text
+    -- Summary text (Tab 1)
     frame.summaryText = frame.summaryPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     frame.summaryText:SetPoint("TOPLEFT", frame.summaryPanel, "TOPLEFT", 10, -5)
     frame.summaryText:SetPoint("BOTTOMRIGHT", frame.summaryPanel, "BOTTOMRIGHT", -10, 5)
@@ -128,17 +169,17 @@ function IronPawProfitMainFrame:Initialize(mainAddon)
     frame.summaryText:SetJustifyV("TOP")
     frame.summaryText:SetText("Click 'Update' to calculate profit recommendations...")
     
-    -- Scroll frame for results
-    frame.scrollFrame = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
+    -- Scroll frame for results (Tab 1)
+    frame.scrollFrame = CreateFrame("ScrollFrame", nil, frame.tabPanels[1], "UIPanelScrollFrameTemplate")
     frame.scrollFrame:SetPoint("TOPLEFT", frame.summaryPanel, "BOTTOMLEFT", 0, -10)
-    frame.scrollFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -30, 20)
+    frame.scrollFrame:SetPoint("BOTTOMRIGHT", frame.tabPanels[1], "BOTTOMRIGHT", -30, 20)
     
-    -- Content frame for scroll
+    -- Content frame for scroll (Tab 1)
     frame.contentFrame = CreateFrame("Frame", nil, frame.scrollFrame)
     frame.contentFrame:SetSize(1, 1) -- Will be resized as needed
     frame.scrollFrame:SetScrollChild(frame.contentFrame)
     
-    -- Results display
+    -- Results display (Tab 1)
     frame.resultRows = {}
     
     -- TAB 2: Token Arbitrage (Merchant Cheng)
@@ -156,8 +197,8 @@ function IronPawProfitMainFrame:Initialize(mainAddon)
     frame.arbitrageScanButton:SetPoint("TOPRIGHT", frame.tabPanels[2], "TOPRIGHT", -20, -10)
     frame.arbitrageScanButton:SetText("Find Arbitrage")
     frame.arbitrageScanButton:SetScript("OnClick", function()
-        if addon and addon.ShowMerchantChengArbitrage then
-            addon:ShowMerchantChengArbitrage()
+        if IronPawProfit and IronPawProfit.ShowMerchantChengArbitrage then
+            IronPawProfit:ShowMerchantChengArbitrage()
         end
     end)
     
@@ -272,7 +313,7 @@ frame.arbitrageInstructions:SetPoint("TOPRIGHT", frame.tabPanels[2], "TOPRIGHT",
 end
 
         -- Show the main frame
-        function IronPawProfit:ShowMainFrame()
+        function self.addon:ShowMainFrame()
             -- Ensure Categories are available before creating UI
             if not self.Categories then
                 self.Categories = {"All", "Meat", "Seafood", "Vegetable", "Fruit", "Reagent", "Bundle"}
@@ -283,10 +324,14 @@ end
             end
             
             self.mainFrame:Show()
+            
+            -- Initialize with the first tab
+            self:ShowTab(1)
+            
             self:UpdateTokenDisplay()
             self:UpdateProfitCalculations()
         end-- Update token display
-        function IronPawProfit:UpdateTokenDisplay(tokens)
+        function self.addon:UpdateTokenDisplay(tokens)
     if not self.mainFrame then return end
     
     tokens = tokens or self:GetIronpawTokenCount()
@@ -294,13 +339,13 @@ end
 end
 
 -- Filter results by category
-        function IronPawProfit:FilterByCategory(category)
+        function self.addon:FilterByCategory(category)
     self.selectedCategory = category
     self:UpdateProfitCalculations()
 end
 
 -- Update profit calculations and display
-        function IronPawProfit:UpdateProfitCalculations()
+        function self.addon:UpdateProfitCalculations()
     if not self.mainFrame or not self.mainFrame:IsShown() then
         return
     end
@@ -325,7 +370,7 @@ end
 end
 
 -- Update summary display
-        function IronPawProfit:UpdateSummaryDisplay(report)
+        function self.addon:UpdateSummaryDisplay(report)
     if not self.mainFrame then return end
     
     -- Safety check for report structure
@@ -356,7 +401,7 @@ end
 end
 
 -- Update results display
-        function IronPawProfit:UpdateResultsDisplay(recommendations, category)
+        function self.addon:UpdateResultsDisplay(recommendations, category)
     if not self.mainFrame then return end
     
     -- Clear existing rows
@@ -394,7 +439,7 @@ end
 end
 
 -- Get or create a result row
-        function IronPawProfit:GetOrCreateResultRow(index)
+        function self.addon:GetOrCreateResultRow(index)
     if self.mainFrame.resultRows[index] then
         return self.mainFrame.resultRows[index]
     end
@@ -462,7 +507,7 @@ end
 end
 
 -- Update a result row with data
-        function IronPawProfit:UpdateResultRow(row, recommendation, index)
+        function self.addon:UpdateResultRow(row, recommendation, index)
     local item = recommendation.itemData
     
     -- Store data for tooltip
@@ -477,11 +522,11 @@ end
     
     -- Color code by profitability
     local color = "|cffffffff" -- White
-    if recommendation.profitPerToken > 1000000 then -- > 100 gold per token
+    if recommendation.profitPerToken > 10 then -- > 100 gold per token
         color = "|cff00ff00" -- Green
-    elseif recommendation.profitPerToken > 500000 then -- > 50 gold per token
+    elseif recommendation.profitPerToken > 50 then -- > 50 gold per token
         color = "|cffffff00" -- Yellow
-    elseif recommendation.profitPerToken < 250000 then -- < 25 gold per token
+    elseif recommendation.profitPerToken < 25 then -- < 25 gold per token
         color = "|cffff8000" -- Orange
     end
     
@@ -501,7 +546,7 @@ end
 end
 
 -- Show item tooltip
-        function IronPawProfit:ShowItemTooltip(itemData)
+        function self.addon:ShowItemTooltip(itemData)
     if not itemData then return end
     
     GameTooltip:SetHyperlink("item:" .. itemData.itemID)
@@ -532,4 +577,251 @@ end
 end
 
     return true
+end
+
+-- Show Merchant Cheng token arbitrage analysis
+function IronPawProfitMainFrame:ShowMerchantChengArbitrage()
+    local addon = self.addon
+    if not addon.MerchantChengCalculator then
+        addon:Print("Merchant Cheng calculator not available")
+        return
+    end
+    
+    local recommendations = addon.MerchantChengCalculator:CalculateRawMaterialCosts()
+    self:UpdateArbitrageDisplay(recommendations)
+end
+
+-- Show raw material analysis
+function IronPawProfitMainFrame:ShowRawMaterialAnalysis()
+    local addon = self.addon
+    if not addon.MerchantChengCalculator then
+        addon:Print("Merchant Cheng calculator not available")
+        return
+    end
+    
+    local report = addon.MerchantChengCalculator:GenerateRawMaterialReport()
+    self:UpdateMaterialDisplay(report.recommendations)
+end
+
+-- Update arbitrage display (Tab 2)
+function IronPawProfitMainFrame:UpdateArbitrageDisplay(recommendations)
+    local addon = self.addon
+    if not addon.mainFrame or not addon.mainFrame.arbitrageContentFrame then return end
+    
+    -- Clear existing rows
+    for _, row in ipairs(addon.mainFrame.arbitrageRows) do
+        row:Hide()
+    end
+    addon.mainFrame.arbitrageRows = {}
+    
+    if not recommendations or #recommendations == 0 then
+        local noResults = addon.mainFrame.arbitrageContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        noResults:SetPoint("TOPLEFT", addon.mainFrame.arbitrageContentFrame, "TOPLEFT", 10, -10)
+        noResults:SetText("No arbitrage opportunities found. Ensure Auctionator is available and auction house has been scanned.")
+        noResults:SetTextColor(1, 0.5, 0.5)
+        table.insert(addon.mainFrame.arbitrageRows, noResults)
+        return
+    end
+    
+    -- Filter for profitable opportunities only (restore original logic)
+    local profitableRecs = {}
+    for _, rec in ipairs(recommendations or {}) do
+        if rec.netProfit and rec.netProfit > 5000 then -- Only show 50+ silver profit
+            table.insert(profitableRecs, rec)
+        end
+    end
+
+    -- Create header
+    local header = self:CreateArbitrageRow(addon.mainFrame.arbitrageContentFrame, 0, 
+        "|cffffd100Generate Token|r", "|cffffd100Buy Sack|r", "|cffffd100Profit|r", "|cffffd100Margin|r")
+    header:SetPoint("TOPLEFT", addon.mainFrame.arbitrageContentFrame, "TOPLEFT", 0, -5)
+    table.insert(addon.mainFrame.arbitrageRows, header)
+
+    -- Create rows for each profitable recommendation
+    for i, rec in ipairs(profitableRecs) do
+        if i <= 15 then -- Limit display
+            local tokenMethod = string.format("%s (%s)", rec.materialName or "Unknown", addon:FormatMoney(rec.totalCostPerToken or 0))
+            local targetSack = string.format("%s (%s)", rec.targetSackName or "Unknown", addon:FormatMoney(rec.targetSackValue or 0))
+            local profit = addon:FormatMoney(rec.netProfit or 0)
+            local margin = string.format("%.1f%%", rec.profitMargin or 0)
+
+            local row = self:CreateArbitrageRow(addon.mainFrame.arbitrageContentFrame, i, tokenMethod, targetSack, profit, margin)
+            row:SetPoint("TOPLEFT", addon.mainFrame.arbitrageRows[i], "BOTTOMLEFT", 0, -2)
+            table.insert(addon.mainFrame.arbitrageRows, row)
+        end
+    end
+    
+    -- Update content size
+    local contentHeight = math.max(100, #addon.mainFrame.arbitrageRows * 25 + 20)
+    addon.mainFrame.arbitrageContentFrame:SetHeight(contentHeight)
+end
+
+-- Update material display (Tab 3)
+function IronPawProfitMainFrame:UpdateMaterialDisplay(recommendations)
+    local addon = self.addon
+    if not addon.mainFrame or not addon.mainFrame.materialContentFrame then return end
+    
+    -- Clear existing rows
+    for _, row in ipairs(addon.mainFrame.materialRows) do
+        row:Hide()
+    end
+    addon.mainFrame.materialRows = {}
+    
+    if not recommendations or #recommendations == 0 then
+        local noResults = addon.mainFrame.materialContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        noResults:SetPoint("TOPLEFT", addon.mainFrame.materialContentFrame, "TOPLEFT", 10, -10)
+        noResults:SetText("No raw materials found. Ensure Auctionator is available and auction house has been scanned.")
+        noResults:SetTextColor(1, 0.5, 0.5)
+        table.insert(addon.mainFrame.materialRows, noResults)
+        return
+    end
+    
+    -- Create header
+    local header = self:CreateMaterialRow(addon.mainFrame.materialContentFrame, 0,
+        "|cffffd100Material|r", "|cffffd100Quantity|r", "|cffffd100Cost per Token|r", "|cffffd100Category|r")
+    header:SetPoint("TOPLEFT", addon.mainFrame.materialContentFrame, "TOPLEFT", 0, -5)
+    table.insert(addon.mainFrame.materialRows, header)
+    
+    -- Create rows for each material
+    for i, rec in ipairs(recommendations) do
+        if i <= 20 then -- Limit display
+            local materialName = rec.materialName or "Unknown"
+            local quantity = tostring(rec.materialsNeeded or 0)
+            local costPerToken = addon:FormatMoney(rec.totalCostPerToken or 0)
+            local category = rec.category or "Unknown"
+            
+            local row = self:CreateMaterialRow(addon.mainFrame.materialContentFrame, i, materialName, quantity, costPerToken, category)
+            row:SetPoint("TOPLEFT", addon.mainFrame.materialRows[i], "BOTTOMLEFT", 0, -2)
+            table.insert(addon.mainFrame.materialRows, row)
+        end
+    end
+    
+    -- Update content size
+    local contentHeight = math.max(100, #addon.mainFrame.materialRows * 25 + 20)
+    addon.mainFrame.materialContentFrame:SetHeight(contentHeight)
+end
+
+-- Create arbitrage row
+function IronPawProfitMainFrame:CreateArbitrageRow(parent, index, tokenMethod, targetSack, profit, margin)
+    local row = CreateFrame("Frame", nil, parent)
+    row:SetSize(640, 20)
+    
+    -- Token method
+    row.tokenText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    row.tokenText:SetPoint("LEFT", row, "LEFT", 5, 0)
+    row.tokenText:SetSize(180, 20)
+    row.tokenText:SetJustifyH("LEFT")
+    row.tokenText:SetText(tokenMethod)
+    
+    -- Target sack
+    row.sackText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    row.sackText:SetPoint("LEFT", row.tokenText, "RIGHT", 10, 0)
+    row.sackText:SetSize(180, 20)
+    row.sackText:SetJustifyH("LEFT")
+    row.sackText:SetText(targetSack)
+    
+    -- Profit
+    row.profitText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    row.profitText:SetPoint("LEFT", row.sackText, "RIGHT", 10, 0)
+    row.profitText:SetSize(100, 20)
+    row.profitText:SetJustifyH("RIGHT")
+    row.profitText:SetText(profit)
+    
+    -- Margin
+    row.marginText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    row.marginText:SetPoint("LEFT", row.profitText, "RIGHT", 10, 0)
+    row.marginText:SetSize(60, 20)
+    row.marginText:SetJustifyH("RIGHT")
+    row.marginText:SetText(margin)
+    
+    -- Color coding
+    if index > 0 then
+        local profitValue = tonumber(profit:match("(%d+)")) or 0
+        if profitValue > 100 then -- 1+ gold
+            row.profitText:SetTextColor(0, 1, 0) -- Green
+        elseif profitValue > 50 then -- 50+ silver
+            row.profitText:SetTextColor(1, 1, 0) -- Yellow
+        else
+            row.profitText:SetTextColor(1, 1, 1) -- White
+        end
+    end
+    
+    return row
+end
+
+-- Create material row
+function IronPawProfitMainFrame:CreateMaterialRow(parent, index, materialName, quantity, costPerToken, category)
+    local row = CreateFrame("Frame", nil, parent)
+    row:SetSize(640, 20)
+    
+    -- Material name
+    row.nameText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    row.nameText:SetPoint("LEFT", row, "LEFT", 5, 0)
+    row.nameText:SetSize(200, 20)
+    row.nameText:SetJustifyH("LEFT")
+    row.nameText:SetText(materialName)
+    
+    -- Quantity
+    row.quantityText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    row.quantityText:SetPoint("LEFT", row.nameText, "RIGHT", 10, 0)
+    row.quantityText:SetSize(80, 20)
+    row.quantityText:SetJustifyH("CENTER")
+    row.quantityText:SetText(quantity)
+    
+    -- Cost per token
+    row.costText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    row.costText:SetPoint("LEFT", row.quantityText, "RIGHT", 10, 0)
+    row.costText:SetSize(120, 20)
+    row.costText:SetJustifyH("RIGHT")
+    row.costText:SetText(costPerToken)
+    
+    -- Category
+    row.categoryText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    row.categoryText:SetPoint("LEFT", row.costText, "RIGHT", 10, 0)
+    row.categoryText:SetSize(100, 20)
+    row.categoryText:SetJustifyH("CENTER")
+    row.categoryText:SetText(category)
+    
+    -- Color coding by category
+    if index > 0 then
+        if category == "Seafood" then
+            row.categoryText:SetTextColor(0.5, 0.8, 1) -- Light blue
+        elseif category == "Meat" then
+            row.categoryText:SetTextColor(1, 0.6, 0.6) -- Light red
+        elseif category == "Vegetable" or category == "Fruit" then
+            row.categoryText:SetTextColor(0.6, 1, 0.6) -- Light green
+        end
+    end
+    
+    return row
+end
+
+-- Filter materials by type
+function IronPawProfitMainFrame:FilterMaterialsByType(materialType)
+    -- This would filter the displayed materials - for now just refresh
+    self:ShowRawMaterialAnalysis()
+end
+
+-- Attach functions to addon
+function IronPawProfitMainFrame:AttachFunctions()
+    local addon = self.addon
+    
+    -- Store reference to the module in addon
+    addon.mainFrameModule = self
+    
+    -- Add Merchant Cheng GUI functions to the main addon
+    function addon:ShowMerchantChengArbitrage()
+        if not self.mainFrameModule then return end
+        self.mainFrameModule:ShowMerchantChengArbitrage()
+    end
+    
+    function addon:ShowRawMaterialAnalysis()
+        if not self.mainFrameModule then return end
+        self.mainFrameModule:ShowRawMaterialAnalysis()
+    end
+    
+    function addon:FilterMaterialsByType(materialType)
+        if not self.mainFrameModule then return end
+        self.mainFrameModule:FilterMaterialsByType(materialType)
+    end
 end
