@@ -1,0 +1,21 @@
+## Interface: 110002
+## Title: IronPaw Profit Calculator
+## Notes: Calculates optimal raw material purchases from Nam Ironpaw using Auctionator data for maximum profit
+## Author: YourName
+## Version: 1.0.0
+## SavedVariables: IronPawProfitDB
+## Dependencies: Auctionator
+## OptionalDeps: Auctionator
+
+# Core files
+Core\Config.lua
+Core\Database.lua
+Core\AuctionatorInterface.lua
+Core\ProfitCalculator.lua
+
+# UI files
+UI\MainFrame.lua
+UI\ProfitDisplay.lua
+
+# Main addon file
+IronPawProfit.lua
