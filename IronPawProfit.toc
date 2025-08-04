@@ -1,8 +1,8 @@
 ## Interface: 110002
 ## Title: IronPaw Profit Calculator
-## Notes: Calculates optimal raw material purchases from Nam Ironpaw using market-adjusted recommendations based on auction house competition and sale success rates
+## Notes: Calculates optimal raw material purchases from Nam Ironpaw and token generation via Merchant Cheng with market-adjusted recommendations based on auction house competition and sale success rates
 ## Author: YourName
-## Version: 1.1.0
+## Version: 1.2.0
 ## SavedVariables: IronPawProfitDB
 ## Dependencies: Auctionator
 ## OptionalDeps: Auctionator
@@ -12,6 +12,7 @@ Core\Config.lua
 Core\Database.lua
 Core\AuctionatorInterface.lua
 Core\ProfitCalculator.lua
+Core\MerchantChengCalculator.lua
 
 # UI files
 UI\MainFrame.lua

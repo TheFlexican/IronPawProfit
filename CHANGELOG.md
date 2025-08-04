@@ -5,6 +5,48 @@ All notable changes to the IronPaw Profit Calculator addon will be documented in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-08-04
+
+### Added - Merchant Cheng Token Generation System
+
+#### Revolutionary Token Generation Features
+- **Raw Material Analysis**: Scan auction house for cheapest raw materials to generate Ironpaw tokens
+- **Merchant Cheng Integration**: Calculate cost per token using raw materials + containers
+- **Complete Profit Cycle**: Raw materials → containers → tokens → Nam Ironpaw purchases
+- **Cost Optimization**: Find most cost-effective ways to generate tokens before spending them
+
+#### New Merchant Cheng Calculator Module
+- **Raw Material Cost Analysis**: Calculate cost per token for all available cooking materials
+- **Market Competition Tracking**: Analyze competition levels for raw material purchases
+- **Container Cost Configuration**: Configurable container costs from Merchant Cheng
+- **Net Profit Calculations**: Factor in both token generation cost and Nam Ironpaw profit potential
+- **Optimal Purchase Planning**: Recommend best raw materials for token generation investment
+
+#### Enhanced Command System
+- **`/ironpaw cheng`**: Comprehensive raw material analysis for token generation
+- **`/ironpaw materials`**: Detailed purchase recommendations with investment planning
+- **`/ironpaw containers [cost]`**: Set or display Merchant Cheng container costs
+- **Integrated Help System**: Updated help with clear explanation of new features
+
+#### Intelligent Market Analysis
+- **Cross-Market Optimization**: Compare token generation costs vs direct Nam Ironpaw purchases
+- **Competition-Aware Recommendations**: Factor raw material market competition into suggestions
+- **Profit Margin Analysis**: Calculate real profit after all token generation costs
+- **Risk Assessment Integration**: Evaluate both raw material purchase risks and final sale potential
+
+### Configuration Enhancements
+- **`merchantChengContainerCost`**: Configurable container cost (default: 5 gold)
+- **Persistent Storage**: Container costs saved across sessions
+- **Dynamic Cost Updates**: Easy container cost adjustment via commands
+
+### Technical Improvements
+- **Modular Architecture**: Clean separation between Nam Ironpaw and Merchant Cheng systems
+- **Shared Market Data**: Raw materials use same market analysis as finished goods
+- **Enhanced Database Utilization**: Leverage existing materialID mappings for raw material lookup
+- **Performance Optimization**: Efficient sorting and filtering for raw material recommendations
+
+---
+
 ## [1.1.0] - 2025-08-04
 
 ### Added - Smart Market Analysis & Competition Detection

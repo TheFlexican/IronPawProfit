@@ -141,7 +141,11 @@ function IronPawProfit:OnInitialize()
     self:InitializeProfitCalculator()
     self.initState.profitCalculator = true
     
-    -- Step 5: Initialize UI components
+    -- Step 5: Initialize merchant cheng calculator
+    self:InitializeMerchantChengCalculator()
+    self.initState.merchantChengCalculator = true
+    
+    -- Step 6: Initialize UI components
     self:InitializeUI()
     self.initState.ui = true
     
@@ -218,6 +222,31 @@ function IronPawProfit:SlashCommand(input)
     elseif args[1] == "market" then
         -- Show market analysis
         self:ShowMarketAnalysis()
+    elseif args[1] == "cheng" then
+        -- Show Merchant Cheng raw material analysis
+        self:ShowMerchantChengAnalysis()
+    elseif args[1] == "materials" then
+        -- Show raw material token generation opportunities
+        self:ShowRawMaterialReport()
+    elseif args[1] == "containers" then
+        -- Set or show container cost from Merchant Cheng
+        if #args >= 2 and tonumber(args[2]) then
+            local costInGold = tonumber(args[2])
+            local costInCopper = costInGold * 10000
+            if self.MerchantChengCalculator then
+                self.MerchantChengCalculator:UpdateContainerCost(costInCopper)
+                self:Print(string.format("Container cost set to %s", self:FormatMoney(costInCopper)))
+            else
+                self:Print("Merchant Cheng calculator not initialized.")
+            end
+        else
+            if self.MerchantChengCalculator then
+                local cost = self.MerchantChengCalculator:GetContainerCost()
+                self:Print(string.format("Current container cost: %s", self:FormatMoney(cost)))
+            else
+                self:Print("Merchant Cheng calculator not initialized.")
+            end
+        end
     elseif args[1] == "debug" then
         if #args >= 2 and args[2] == "queries" then
             if self.AuctionatorInterface then
@@ -256,6 +285,13 @@ function IronPawProfit:ShowHelp()
     self:Print("/ironpaw config - Show current configuration settings")
     self:Print("/ironpaw sales - Show auction sales report and success rates")
     self:Print("/ironpaw market - Show market analysis and competition levels")
+    self:Print(" ")
+    self:Print("Merchant Cheng Token Generation:")
+    self:Print("/ironpaw cheng - Analyze raw materials for token generation")
+    self:Print("/ironpaw materials - Show raw material purchase recommendations") 
+    self:Print("/ironpaw containers [cost] - Set/show Merchant Cheng container cost")
+    self:Print(" ")
+    self:Print("Debug Commands:")
     self:Print("/ironpaw debug - Show debug information")
     self:Print("/ironpaw debug queries - Debug database vs query comparison")
     self:Print("/ironpaw debug refresh - Debug refresh with detailed logging")
@@ -471,6 +507,107 @@ function IronPawProfit:ShowMarketAnalysis()
 end
 
 --[[
+    Show Merchant Cheng raw material analysis
+    Displays cost per token for raw materials that can be used with containers
+]]--
+function IronPawProfit:ShowMerchantChengAnalysis()
+    if not self.MerchantChengCalculator then
+        self:Print("Merchant Cheng calculator not initialized.")
+        return
+    end
+    
+    self:Print("=== Merchant Cheng Token Generation Analysis ===")
+    
+    local report = self.MerchantChengCalculator:GenerateRawMaterialReport()
+    
+    if #report.warnings > 0 then
+        for _, warning in ipairs(report.warnings) do
+            self:Print("|cFFFF6B6BWarning:|r " .. warning)
+        end
+        self:Print(" ")
+    end
+    
+    if #report.profitable == 0 then
+        self:Print("No profitable raw materials found for token generation.")
+        self:Print("Container costs may be too high relative to potential profits.")
+        return
+    end
+    
+    self:Print(string.format("Found %d profitable raw materials for token generation:", #report.profitable))
+    self:Print(string.format("Container cost: %s", self:FormatMoney(self.MerchantChengCalculator:GetContainerCost())))
+    self:Print(" ")
+    
+    -- Show top profitable raw materials
+    self:Print("Most profitable raw materials (cost per token):")
+    for i = 1, math.min(10, #report.profitable) do
+        local mat = report.profitable[i]
+        local profitColor = mat.netProfit > 50000 and "|cFF90EE90" or "|cFFFFFFFF" -- Green for >5g profit, white otherwise
+        
+        self:Print(string.format("  %d. %s (%s)", i, mat.materialName, mat.category))
+        self:Print(string.format("     Cost per token: %s | Net profit: %s%s|r", 
+            self:FormatMoney(mat.totalCostPerToken),
+            profitColor,
+            self:FormatMoney(mat.netProfit)))
+        self:Print(string.format("     Materials needed: %d x %s = %s", 
+            mat.materialsNeeded,
+            self:FormatMoney(mat.materialPrice),
+            self:FormatMoney(mat.materialsNeeded * mat.materialPrice)))
+        self:Print(string.format("     Competition: %s | Market depth: %d listings", 
+            mat.competitionLevel, mat.marketDepth))
+        self:Print(" ")
+    end
+    
+    self:Print("Use '/ironpaw materials <gold>' to see purchase recommendations.")
+    self:Print("Use '/ironpaw containers <cost>' to update container cost.")
+end
+
+--[[
+    Show raw material purchase recommendations
+    Displays optimal raw material purchases for token generation
+]]--
+function IronPawProfit:ShowRawMaterialReport()
+    if not self.MerchantChengCalculator then
+        self:Print("Merchant Cheng calculator not initialized.")
+        return
+    end
+    
+    -- Try to determine available gold (this is a placeholder - actual implementation would need bag scanning)
+    local availableGold = 1000000 -- Default to 100g in copper for demonstration
+    
+    self:Print("=== Raw Material Token Generation Report ===")
+    
+    local purchases, totalGoldNeeded, tokensGenerated = self.MerchantChengCalculator:CalculateOptimalRawMaterialPurchases(availableGold, 50)
+    
+    if #purchases == 0 then
+        self:Print("No profitable raw material purchases found.")
+        return
+    end
+    
+    self:Print(string.format("Optimal token generation plan (max 50 tokens):"))
+    self:Print(string.format("Total investment: %s | Tokens generated: %d", 
+        self:FormatMoney(totalGoldNeeded), tokensGenerated))
+    self:Print(" ")
+    
+    local totalProfit = 0
+    
+    for i, purchase in ipairs(purchases) do
+        totalProfit = totalProfit + purchase.netProfit
+        
+        self:Print(string.format("%d. %s (%s)", i, purchase.materialName, purchase.category))
+        self:Print(string.format("   Generate %d tokens | Investment: %s", 
+            purchase.tokensToGenerate, self:FormatMoney(purchase.totalCost)))
+        self:Print(string.format("   Buy %d materials + %d containers", 
+            purchase.materialsNeeded, purchase.containersNeeded))
+        self:Print(string.format("   Expected profit: %s | Net profit: %s", 
+            self:FormatMoney(purchase.expectedProfit), self:FormatMoney(purchase.netProfit)))
+        self:Print(" ")
+    end
+    
+    self:Print(string.format("Total net profit potential: %s", self:FormatMoney(totalProfit)))
+    self:Print("Note: This assumes you can sell Nam Ironpaw items at calculated profit margins.")
+end
+
+--[[
     Update Ironpaw token display in UI
     Called when bags change or UI is refreshed
 ]]--
@@ -579,6 +716,16 @@ function IronPawProfit:InitializeProfitCalculator()
         IronPawProfitCalculator:Initialize(self)
     else
         self:Print("Warning: Profit calculator module not loaded")
+    end
+end
+
+function IronPawProfit:InitializeMerchantChengCalculator()
+    -- Initialize the merchant cheng calculator module
+    if IronPawProfitMerchantChengCalculator and IronPawProfitMerchantChengCalculator.Initialize then
+        self.MerchantChengCalculator = IronPawProfitMerchantChengCalculator
+        IronPawProfitMerchantChengCalculator:Initialize(self)
+    else
+        self:Print("Warning: Merchant Cheng calculator module not loaded")
     end
 end
 

@@ -1,8 +1,17 @@
 # IronPaw Profit Calculator
 
-A World of Warcraft addon that helps you maximize profit by analyzing auction house data and suggesting optimal raw material purchases from Nam Ironpaw using Ironpaw Tokens.
+A World of Warcraft addon that helps you maximize profit by analyzing auction house data and suggesting optimal raw material purchases from Nam Ironpaw using Ironpaw tokens, plus complete token generation via Merchant Cheng raw materials.
 
-## 🚀 NEW in v1.1.0: Smart Market Analysis
+## 🚀 NEW in v1.2.0: Merchant Cheng Token Generation
+
+**Complete profit cycle: Generate tokens cheaply, spend them profitably!**
+
+- **Raw Material Analysis** - Find cheapest ways to generate Ironpaw tokens  
+- **Merchant Cheng Integration** - Calculate cost per token via containers + raw materials
+- **Cross-Market Optimization** - Compare token generation costs vs direct purchases
+- **Total Profit Calculation** - Factor in both generation costs and sale profits
+
+## 🔥 v1.1.0: Smart Market Analysis
 
 **Revolutionary market intelligence that recommends items that actually sell, not just theoretical profit!**
 
@@ -21,12 +30,20 @@ A World of Warcraft addon that helps you maximize profit by analyzing auction ho
 - **Price Trends**: Shows 7-day price trends for informed decision making
 - **User-Friendly UI**: Clean interface with sorting and filtering options
 
-### Market Intelligence (NEW!)
+### Token Generation System (NEW!)
+- **Raw Material Analysis**: Find cheapest raw materials to generate tokens via Merchant Cheng
+- **Container Cost Tracking**: Configure and track Merchant Cheng container costs
+- **Cost Per Token Calculation**: Calculate total cost to generate each Ironpaw token
+- **Net Profit Analysis**: Factor token generation costs into final profit calculations
+- **Optimal Purchase Planning**: Recommend best raw materials for token investment
+
+### Market Intelligence
 - **Competition Analysis**: Detects low/medium/high/very_high competition levels
 - **Market Depth Tracking**: Monitors current auction house listing counts
 - **Sale Success Rates**: Tracks which items actually sell vs expire
 - **Market-Adjusted Priority**: Recommends based on sale potential, not just profit
 - **Time on Market Analysis**: Estimates how quickly items sell
+- **Cross-Market Optimization**: Compare raw material vs finished goods markets
 
 ## Requirements
 
@@ -45,22 +62,40 @@ A World of Warcraft addon that helps you maximize profit by analyzing auction ho
 
 ### Basic Commands
 
+#### Core Features
 - `/ironpaw` or `/ipp` - Open the main calculator window
 - `/ironpaw scan` - Refresh auction house data with market analysis
 - `/ironpaw tokens` - Show current Ironpaw Token count
 - `/ironpaw config` - Open configuration options
-- `/ironpaw market` - **NEW!** Show market analysis and competition levels
-- `/ironpaw sales` - **NEW!** Show auction performance and success rates
+- `/ironpaw market` - Show market analysis and competition levels
+- `/ironpaw sales` - Show auction performance and success rates
+
+#### Token Generation (NEW!)
+- `/ironpaw cheng` - **NEW!** Analyze raw materials for token generation
+- `/ironpaw materials` - **NEW!** Show raw material purchase recommendations
+- `/ironpaw containers [cost]` - **NEW!** Set/show Merchant Cheng container costs
+
+#### Utility
 - `/ironpaw help` - Show command help
 
 ### Getting Started
 
+#### Option 1: Traditional Token Spending (Nam Ironpaw)
 1. **Install Auctionator** (recommended) and perform auction house scans
 2. **Open the addon** with `/ironpaw`
 3. **Click "Scan AH"** to refresh price data and analyze market conditions
 4. **Review market-adjusted recommendations** - items with better sale potential rank higher
 5. **Check market analysis** with `/ironpaw market` to understand competition
 6. **Visit Nam Ironpaw** in Halfhill (Valley of the Four Winds, 53.5, 51.2)
+
+#### Option 2: Complete Profit Cycle (Merchant Cheng + Nam Ironpaw)
+1. **Run `/ironpaw cheng`** to analyze raw material costs for token generation
+2. **Check `/ironpaw materials`** for optimal raw material purchase recommendations
+3. **Set container cost** with `/ironpaw containers <gold>` (e.g., `/ironpaw containers 5`)
+4. **Buy recommended raw materials** from auction house
+5. **Visit Merchant Cheng** to buy containers and create filled containers
+6. **Turn in containers** to generate Ironpaw tokens
+7. **Use tokens with Nam Ironpaw** following market-adjusted recommendations
 
 ### Understanding Market-Adjusted Recommendations
 
