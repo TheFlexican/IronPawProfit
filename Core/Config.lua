@@ -35,6 +35,8 @@ local DefaultConfig = {
     showMinimapButton = true,            -- Show minimap button (future feature)
     colorCodeProfit = true,              -- Color-code profit values in UI
     maxRecommendationsPerItem = 999,     -- Maximum items to display (999 = show all)
+    maxStacksPerItem = 999,              -- Maximum stacks per item (999 = no limit)
+    prioritizeTopItem = true,            -- Give top profitable item priority for all tokens
     dataMaxAge = 168,                    -- Maximum age of auction data in hours (7 days)
     windowPosition = {                   -- UI window position
         point = "CENTER",
@@ -65,6 +67,7 @@ configFrame:SetScript("OnEvent", function(self, event, loadedAddonName)
             config.minProfit = math.max(0, math.min(1000, config.minProfit or 1))
             config.maxInvestment = math.max(0, math.min(100000, config.maxInvestment or 1000))
             config.maxRecommendationsPerItem = math.max(1, math.min(999, config.maxRecommendationsPerItem or 999)) -- Allow up to 999 items
+            config.maxStacksPerItem = math.max(1, math.min(999, config.maxStacksPerItem or 999)) -- Allow 1-999 stacks per item
             config.dataMaxAge = math.max(1, math.min(720, config.dataMaxAge or 168)) -- 1 hour to 30 days
             
             -- Ensure booleans
@@ -72,6 +75,7 @@ configFrame:SetScript("OnEvent", function(self, event, loadedAddonName)
             config.autoScan = (config.autoScan == true)
             config.showMinimapButton = (config.showMinimapButton ~= false)
             config.colorCodeProfit = (config.colorCodeProfit ~= false)
+            config.prioritizeTopItem = (config.prioritizeTopItem ~= false)
         end
 
         -- Get configuration value with fallback

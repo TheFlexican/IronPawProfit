@@ -33,10 +33,96 @@ function IronPawProfitCalculator:Initialize(mainAddon)
         -- Calculate profit margin as percentage
         local profitMargin = 100 -- Since we only pay tokens, margin is essentially 100% if profitable
         
-        return profitPerToken, profitPerStack, profitMargin
+    return profitPerToken, profitPerStack, profitMargin
+end
+
+-- Calculate market multiplier based on competition and market conditions
+    function ProfitCalculator:GetMarketMultiplier(itemData)
+        local multiplier = 1.0 -- Base multiplier
+        
+        -- Factor in competition level
+        if itemData.competitionLevel == "low" then
+            multiplier = multiplier * 1.3 -- 30% bonus for low competition
+        elseif itemData.competitionLevel == "medium" then
+            multiplier = multiplier * 1.1 -- 10% bonus for medium competition
+        elseif itemData.competitionLevel == "high" then
+            multiplier = multiplier * 0.8 -- 20% penalty for high competition
+        elseif itemData.competitionLevel == "very_high" then
+            multiplier = multiplier * 0.6 -- 40% penalty for very high competition
+        end
+        
+        -- Factor in market depth (number of current listings)
+        local marketDepth = itemData.marketDepth or 0
+        if marketDepth == 0 then
+            multiplier = multiplier * 1.2 -- 20% bonus for no competition
+        elseif marketDepth <= 3 then
+            multiplier = multiplier * 1.1 -- 10% bonus for low listings
+        elseif marketDepth <= 10 then
+            multiplier = multiplier * 1.0 -- Normal market
+        elseif marketDepth <= 20 then
+            multiplier = multiplier * 0.85 -- 15% penalty for many listings
+        else
+            multiplier = multiplier * 0.7 -- 30% penalty for overcrowded market
+        end
+        
+        -- Factor in average time on market
+        local timeOnMarket = itemData.averageTimeOnMarket or 3
+        if timeOnMarket <= 1 then
+            multiplier = multiplier * 1.15 -- 15% bonus for fast sales
+        elseif timeOnMarket <= 3 then
+            multiplier = multiplier * 1.05 -- 5% bonus for reasonable sales speed
+        elseif timeOnMarket > 7 then
+            multiplier = multiplier * 0.9 -- 10% penalty for slow sales
+        end
+        
+        -- Factor in recommendation score from market analysis
+        local recScore = itemData.recommendationScore or 50
+        if recScore >= 80 then
+            multiplier = multiplier * 1.1 -- 10% bonus for high recommendation score
+        elseif recScore <= 30 then
+            multiplier = multiplier * 0.9 -- 10% penalty for low recommendation score
+        end
+        
+        return multiplier
     end
 
-    -- Calculate optimal purchase recommendations
+-- Get human-readable explanation of market conditions
+    function ProfitCalculator:GetMarketReason(itemData)
+        local reasons = {}
+        
+        -- Competition analysis
+        if itemData.competitionLevel == "low" then
+            table.insert(reasons, "low competition")
+        elseif itemData.competitionLevel == "high" then
+            table.insert(reasons, "high competition")
+        elseif itemData.competitionLevel == "very_high" then
+            table.insert(reasons, "very high competition")
+        end
+        
+        -- Market depth analysis
+        local marketDepth = itemData.marketDepth or 0
+        if marketDepth == 0 then
+            table.insert(reasons, "no current listings")
+        elseif marketDepth > 20 then
+            table.insert(reasons, "market flooded (" .. marketDepth .. " listings)")
+        elseif marketDepth > 10 then
+            table.insert(reasons, "many listings (" .. marketDepth .. ")")
+        end
+        
+        -- Time on market analysis
+        local timeOnMarket = itemData.averageTimeOnMarket or 3
+        if timeOnMarket <= 1 then
+            table.insert(reasons, "sells quickly")
+        elseif timeOnMarket > 7 then
+            table.insert(reasons, "sells slowly")
+        end
+        
+        if #reasons == 0 then
+            return "normal market conditions"
+        else
+            return table.concat(reasons, ", ")
+        end
+    end    -- Calculate optimal purchase recommendations
     function ProfitCalculator:CalculateOptimalPurchases(availableTokens, maxInvestment, minProfitThreshold)
         local recommendations = {}
         local totalProfitPotential = 0
@@ -58,12 +144,19 @@ function IronPawProfitCalculator:Initialize(mainAddon)
                     
                     -- Only consider profitable items above threshold
                     if profitPerToken >= (minProfitThreshold * 10000) then -- Convert gold to copper
+                        -- Calculate market-adjusted priority
+                        local marketMultiplier = ProfitCalculator:GetMarketMultiplier(itemData)
+                        local adjustedPriority = (profitPerToken / itemData.tokenCost) * marketMultiplier
+                        
                         table.insert(recommendations, {
                             itemData = itemData,
                             profitPerToken = profitPerToken,
                             profitPerStack = profitPerStack,
                             profitMargin = profitMargin,
-                            priority = profitPerToken / itemData.tokenCost -- Efficiency ratio
+                            priority = adjustedPriority, -- Market-adjusted priority
+                            rawPriority = profitPerToken / itemData.tokenCost, -- Original priority
+                            marketMultiplier = marketMultiplier,
+                            marketReason = ProfitCalculator:GetMarketReason(itemData)
                         })
                     end
                 end
@@ -102,8 +195,22 @@ function IronPawProfitCalculator:Initialize(mainAddon)
                 recommendedStacks = maxAffordableStacks -- Buy as many as we can afford with tokens
             end
             
-            -- Apply market depth considerations (don't flood the market)
-            recommendedStacks = math.min(recommendedStacks, 10) -- Cap at 10 stacks per item
+            -- Apply market depth considerations 
+            -- Check configuration for prioritizing top item and max stacks
+            local prioritizeTopItem = IronPawProfit:GetConfig("prioritizeTopItem")
+            local maxStacksPerItem = IronPawProfit:GetConfig("maxStacksPerItem") or 999
+            
+            if prioritizeTopItem and i == 1 then
+                -- First (most profitable) item gets priority - use all available tokens if profitable
+                recommendedStacks = maxAffordableStacks
+            else
+                -- Apply configured maximum stacks per item for other items
+                if maxStacksPerItem >= 999 then
+                    recommendedStacks = maxAffordableStacks
+                else
+                    recommendedStacks = math.min(recommendedStacks, maxStacksPerItem)
+                end
+            end
             
             rec.recommendedStacks = recommendedStacks
             rec.tokensNeeded = recommendedStacks * item.tokenCost
@@ -182,6 +289,16 @@ end
                 risk.level = "high"
                 risk.score = risk.score + 30
                 table.insert(risk.factors, reason)
+            end
+            
+            -- Check auction sale success rate
+            local successRate, successMessage = IronPawProfit.AuctionatorInterface:GetSaleSuccessRate(itemData.itemID)
+            if successRate < 0.5 then
+                risk.score = risk.score + 25
+                table.insert(risk.factors, "Low auction success rate (" .. string.format("%.1f%%", successRate * 100) .. ")")
+            elseif successRate > 0.8 then
+                risk.score = risk.score - 15
+                table.insert(risk.factors, "High auction success rate (" .. string.format("%.1f%%", successRate * 100) .. ")")
             end
             
             -- Check market volatility

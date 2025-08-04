@@ -212,6 +212,12 @@ function IronPawProfit:SlashCommand(input)
     elseif args[1] == "config" then
         -- Show current configuration
         self:ShowConfig()
+    elseif args[1] == "sales" then
+        -- Show auction sale report
+        self:ShowSalesReport()
+    elseif args[1] == "market" then
+        -- Show market analysis
+        self:ShowMarketAnalysis()
     elseif args[1] == "debug" then
         if #args >= 2 and args[2] == "queries" then
             if self.AuctionatorInterface then
@@ -248,6 +254,8 @@ function IronPawProfit:ShowHelp()
     self:Print("/ironpaw scan - Refresh auction house data")
     self:Print("/ironpaw tokens - Show current token count")
     self:Print("/ironpaw config - Show current configuration settings")
+    self:Print("/ironpaw sales - Show auction sales report and success rates")
+    self:Print("/ironpaw market - Show market analysis and competition levels")
     self:Print("/ironpaw debug - Show debug information")
     self:Print("/ironpaw debug queries - Debug database vs query comparison")
     self:Print("/ironpaw debug refresh - Debug refresh with detailed logging")
@@ -268,6 +276,8 @@ function IronPawProfit:ShowConfig()
     local showOnlyProfitable = self:GetConfig("showOnlyProfitable")
     local autoScan = self:GetConfig("autoScan")
     local maxRecommendations = self:GetConfig("maxRecommendationsPerItem") or 999
+    local maxStacksPerItem = self:GetConfig("maxStacksPerItem") or 999
+    local prioritizeTopItem = self:GetConfig("prioritizeTopItem")
     local dataMaxAge = self:GetConfig("dataMaxAge") or 168
     
     -- Display current values
@@ -276,6 +286,8 @@ function IronPawProfit:ShowConfig()
     self:Print(string.format("Show Only Profitable: %s", showOnlyProfitable and "Yes" or "No"))
     self:Print(string.format("Auto Scan on Login: %s", autoScan and "Yes" or "No"))
     self:Print(string.format("Max Recommendations: %d", maxRecommendations))
+    self:Print(string.format("Max Stacks Per Item: %s", maxStacksPerItem == 999 and "No Limit" or tostring(maxStacksPerItem)))
+    self:Print(string.format("Prioritize Top Item: %s", prioritizeTopItem and "Yes" or "No"))
     self:Print(string.format("Data Max Age: %d hours", dataMaxAge))
     
     self:Print(" ")
@@ -283,6 +295,179 @@ function IronPawProfit:ShowConfig()
     self:Print("/ironpaw reset - Reset all settings to defaults")
     self:Print(" ")
     self:Print("Note: Most settings can be changed in the main addon window.")
+end
+
+--[[
+    Show auction sales report and success rates
+    Analyzes auction performance to help with investment decisions
+]]--
+function IronPawProfit:ShowSalesReport()
+    if not self.AuctionatorInterface then
+        self:Print("Auctionator interface not available.")
+        return
+    end
+    
+    self:Print("=== IronPaw Auction Sales Report ===")
+    
+    local report = self.AuctionatorInterface:GenerateAuctionReport()
+    
+    if #report.warnings > 0 then
+        self:Print("Warnings:")
+        for _, warning in ipairs(report.warnings) do
+            self:Print("  " .. warning)
+        end
+        return
+    end
+    
+    -- Overall statistics
+    local overview = report.overview
+    self:Print(string.format("Total Auctions: %d sold, %d active, %d expired", 
+        overview.totalSold, overview.totalActive, overview.totalExpired))
+    
+    if overview.totalSold > 0 then
+        self:Print(string.format("Sales Value: %s (avg: %s per auction)", 
+            self:FormatMoney(overview.totalSalesValue),
+            self:FormatMoney(overview.averageSaleValue)))
+    end
+    
+    if overview.totalActive > 0 then
+        self:Print(string.format("Active Value: %s", self:FormatMoney(overview.totalActiveValue)))
+    end
+    
+    -- Item-specific recommendations
+    if #report.recommendations > 0 then
+        self:Print(" ")
+        self:Print("Recommendations based on auction history:")
+        for _, rec in ipairs(report.recommendations) do
+            if rec.type == "warning" then
+                self:Print("|cFFFF6B6B" .. rec.message .. "|r") -- Red text
+            else
+                self:Print("|cFF90EE90" .. rec.message .. "|r") -- Light green text
+            end
+        end
+    end
+    
+    -- Show top performers if we have data
+    local topItems = {}
+    for itemID, data in pairs(report.byItem) do
+        if data.stats.sold > 0 then
+            table.insert(topItems, data)
+        end
+    end
+    
+    if #topItems > 0 then
+        table.sort(topItems, function(a, b) return a.successRate > b.successRate end)
+        
+        self:Print(" ")
+        self:Print("Top performing items:")
+        for i = 1, math.min(5, #topItems) do
+            local item = topItems[i]
+            self:Print(string.format("  %s: %.1f%% success, %s profit/token", 
+                item.name, item.successRate * 100, self:FormatMoney(item.profitPerToken)))
+        end
+    end
+    
+    self:Print(" ")
+    self:Print("Use this data to make informed investment decisions!")
+end
+
+--[[
+    Show market analysis and competition levels
+    Analyzes current auction house conditions for all items
+]]--
+function IronPawProfit:ShowMarketAnalysis()
+    if not self.Database then
+        self:Print("Database not available yet.")
+        return
+    end
+    
+    self:Print("=== IronPaw Market Analysis ===")
+    
+    -- Collect items with market data
+    local itemsWithData = {}
+    local totalItems = 0
+    
+    for itemID, itemData in pairs(self.Database) do
+        totalItems = totalItems + 1
+        if itemData.marketAvailable and itemData.profitPerToken and itemData.profitPerToken > 0 then
+            -- Calculate market-adjusted priority
+            local marketMultiplier = self.ProfitCalculator:GetMarketMultiplier(itemData)
+            local marketReason = self.ProfitCalculator:GetMarketReason(itemData)
+            
+            table.insert(itemsWithData, {
+                name = itemData.name,
+                profitPerToken = itemData.profitPerToken,
+                marketMultiplier = marketMultiplier,
+                marketReason = marketReason,
+                competitionLevel = itemData.competitionLevel or "unknown",
+                marketDepth = itemData.marketDepth or 0,
+                averageTimeOnMarket = itemData.averageTimeOnMarket or 0,
+                adjustedProfit = itemData.profitPerToken * marketMultiplier
+            })
+        end
+    end
+    
+    if #itemsWithData == 0 then
+        self:Print("No market data available. Run '/ironpaw scan' first.")
+        return
+    end
+    
+    -- Sort by market-adjusted profit
+    table.sort(itemsWithData, function(a, b) return a.adjustedProfit > b.adjustedProfit end)
+    
+    self:Print(string.format("Analyzed %d items with market data:", #itemsWithData))
+    self:Print(" ")
+    
+    -- Show top recommendations based on market conditions
+    self:Print("Top recommendations (market-adjusted):")
+    for i = 1, math.min(8, #itemsWithData) do
+        local item = itemsWithData[i]
+        local multiplierText = ""
+        if item.marketMultiplier > 1.1 then
+            multiplierText = "|cFF90EE90+" .. string.format("%.0f%%|r", (item.marketMultiplier - 1) * 100)
+        elseif item.marketMultiplier < 0.9 then
+            multiplierText = "|cFFFF6B6B" .. string.format("%.0f%%|r", (item.marketMultiplier - 1) * 100)
+        else
+            multiplierText = "±0%"
+        end
+        
+        self:Print(string.format("  %d. %s: %s -> %s (%s)", 
+            i, 
+            item.name,
+            self:FormatMoney(item.profitPerToken),
+            self:FormatMoney(item.adjustedProfit),
+            multiplierText))
+        self:Print(string.format("     Market: %s", item.marketReason))
+    end
+    
+    -- Show market competition summary
+    self:Print(" ")
+    self:Print("Competition analysis:")
+    local competitionCounts = {low = 0, medium = 0, high = 0, very_high = 0, unknown = 0}
+    local highCompetitionItems = {}
+    
+    for _, item in ipairs(itemsWithData) do
+        competitionCounts[item.competitionLevel] = competitionCounts[item.competitionLevel] + 1
+        if item.competitionLevel == "high" or item.competitionLevel == "very_high" then
+            table.insert(highCompetitionItems, item.name)
+        end
+    end
+    
+    self:Print(string.format("  Low competition: %d items", competitionCounts.low))
+    self:Print(string.format("  Medium competition: %d items", competitionCounts.medium))
+    self:Print(string.format("  High competition: %d items", competitionCounts.high))
+    self:Print(string.format("  Very high competition: %d items", competitionCounts.very_high))
+    
+    if #highCompetitionItems > 0 then
+        self:Print(" ")
+        self:Print("|cFFFF6B6BAvoid due to high competition:|r")
+        for i = 1, math.min(5, #highCompetitionItems) do
+            self:Print("  • " .. highCompetitionItems[i])
+        end
+    end
+    
+    self:Print(" ")
+    self:Print("Market analysis considers competition, current listings, and sale speed.")
 end
 
 --[[

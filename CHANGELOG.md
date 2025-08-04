@@ -5,6 +5,79 @@ All notable changes to the IronPaw Profit Calculator addon will be documented in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-08-04
+
+### Added - Smart Market Analysis & Competition Detection
+
+#### Revolutionary Market Intelligence System
+- **Market Depth Analysis**: Real-time analysis of auction house competition during scans
+- **Competition Level Detection**: Automatically classifies markets as low/medium/high/very_high competition
+- **Market-Adjusted Recommendations**: Prioritizes items that actually sell over theoretical profit
+- **Average Time on Market**: Estimates how long items take to sell based on price history
+- **Market Recommendation Score**: 0-100 score factoring competition, listings, and sale speed
+
+#### Enhanced Token Allocation Strategy
+- **Smart Priority System**: Uses market multipliers to adjust recommendations
+  - Low competition items get 30% priority boost
+  - High competition items get 20-40% priority penalty
+  - Market-flooded items (20+ listings) heavily penalized
+- **Prioritize Top Item Configuration**: Option to allocate all tokens to most profitable item
+- **Maximum Stacks Per Item**: Configurable limit for market depth considerations
+- **Intelligent Distribution**: Balances profit potential with actual market conditions
+
+#### New Commands and Reports
+- **`/ironpaw market`**: Comprehensive market analysis and competition report
+- **`/ironpaw sales`**: Auction performance tracking and success rates
+- **Market-Adjusted Priority Display**: Shows how market conditions affect recommendations
+- **Competition Warnings**: Alerts about overcrowded markets to avoid
+
+#### Advanced Auction House Integration
+- **Sale Success Tracking**: Monitors which items actually sell vs expire
+- **Market Volatility Analysis**: Detects price wars and unstable markets
+- **Listing Count Analysis**: Tracks current auction house inventory levels
+- **Price History Intelligence**: Analyzes 14-day price trends for market health
+
+#### Configuration Enhancements
+- **`maxStacksPerItem`**: Control maximum stacks per item (default: 999 = no limit)
+- **`prioritizeTopItem`**: Give top profitable item priority for all tokens (default: true)
+- **Enhanced Config Display**: Shows new market-related configuration options
+
+#### Risk Assessment Improvements
+- **Market-Based Risk Scoring**: Incorporates auction success rates into risk calculations
+- **Competition Risk Factors**: Flags high-competition items as higher risk
+- **Sale Performance Integration**: Uses historical auction performance in recommendations
+
+### Technical Improvements
+- **Async Market Analysis**: Non-blocking market depth analysis during scans
+- **Enhanced Data Storage**: Items now store market competition and timing data
+- **Improved Performance**: Optimized auction house data processing
+- **Better Error Handling**: More robust handling of missing auction data
+
+### Changed
+- **Recommendation Algorithm**: Now uses market-adjusted priority instead of raw profit
+- **Token Allocation Logic**: Considers market conditions when distributing tokens
+- **Priority Calculation**: Factors in competition level, market depth, and sale speed
+- **User Interface**: Enhanced to show market-adjusted vs theoretical profit
+
+### Example Impact
+**Before (Theoretical Only):**
+```
+1. White Turnips: 378g87s9c profit per token
+2. Green Cabbages: 370g97s0c profit per token
+3. Red Leeks: 316g94s5c profit per token
+```
+
+**After (Market-Adjusted):**
+```
+1. Red Leeks: 316g94s -> 411g02s (+30% - low competition)
+2. Green Cabbages: 370g97s -> 407g07s (+10% - normal market)
+3. White Turnips: 378g87s -> 264g21s (-30% - market flooded)
+```
+
+**Result**: Recommends Red Leeks despite lower base profit due to better market conditions!
+
+---
+
 ## [1.0.0] - 2025-08-04
 
 ### Initial Release
