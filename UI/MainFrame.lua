@@ -141,6 +141,132 @@ function IronPawProfitMainFrame:Initialize(mainAddon)
     -- Results display
     frame.resultRows = {}
     
+    -- TAB 2: Token Arbitrage (Merchant Cheng)
+    frame.tabPanels[2] = CreateFrame("Frame", nil, frame)
+    frame.tabPanels[2]:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, contentY)
+    frame.tabPanels[2]:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
+    frame.tabPanels[2]:Hide()
+    
+    -- Container cost setting (Tab 2)
+    -- Container cost is now fixed at 1.35g per container (set in logic, not configurable)
+    
+    -- Arbitrage scan button (Tab 2)
+    frame.arbitrageScanButton = CreateFrame("Button", nil, frame.tabPanels[2], "GameMenuButtonTemplate")
+    frame.arbitrageScanButton:SetSize(120, 25)
+    frame.arbitrageScanButton:SetPoint("TOPRIGHT", frame.tabPanels[2], "TOPRIGHT", -20, -10)
+    frame.arbitrageScanButton:SetText("Find Arbitrage")
+    frame.arbitrageScanButton:SetScript("OnClick", function()
+        if addon and addon.ShowMerchantChengArbitrage then
+            addon:ShowMerchantChengArbitrage()
+        end
+    end)
+    
+    -- Instructions (Tab 2)
+frame.arbitrageInstructions = frame.tabPanels[2]:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+frame.arbitrageInstructions:SetPoint("TOPLEFT", frame.tabPanels[2], "TOPLEFT", 20, -40)
+frame.arbitrageInstructions:SetPoint("TOPRIGHT", frame.tabPanels[2], "TOPRIGHT", -20, -50)
+    frame.arbitrageInstructions:SetJustifyH("LEFT")
+    frame.arbitrageInstructions:SetJustifyV("TOP")
+    frame.arbitrageInstructions:SetText("|cffffd100Token Arbitrage Strategy:|r\n1. Find cheapest raw materials to generate tokens via Merchant Cheng\n2. Use those tokens to buy most valuable sacks from Nam Ironpaw\n3. Sell sacks on auction house for profit\n\nExample: Buy Golden Carp (60x) + Container → 1 Token → Buy White Turnip Sack → Sell for profit")
+    
+    -- Arbitrage results (Tab 2)
+    frame.arbitrageScrollFrame = CreateFrame("ScrollFrame", nil, frame.tabPanels[2], "UIPanelScrollFrameTemplate")
+    frame.arbitrageScrollFrame:SetPoint("TOPLEFT", frame.arbitrageInstructions, "BOTTOMLEFT", 0, -20)
+    frame.arbitrageScrollFrame:SetPoint("BOTTOMRIGHT", frame.tabPanels[2], "BOTTOMRIGHT", -30, 20)
+    
+    frame.arbitrageContentFrame = CreateFrame("Frame", nil, frame.arbitrageScrollFrame)
+    frame.arbitrageContentFrame:SetSize(1, 1)
+    frame.arbitrageScrollFrame:SetScrollChild(frame.arbitrageContentFrame)
+    
+    frame.arbitrageRows = {}
+    
+    -- TAB 3: Raw Materials (Merchant Cheng)
+    frame.tabPanels[3] = CreateFrame("Frame", nil, frame)
+    frame.tabPanels[3]:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, contentY)
+    frame.tabPanels[3]:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
+    frame.tabPanels[3]:Hide()
+    
+    -- Material cost analysis button (Tab 3)
+    frame.materialScanButton = CreateFrame("Button", nil, frame.tabPanels[3], "GameMenuButtonTemplate")
+    frame.materialScanButton:SetSize(140, 25)
+    frame.materialScanButton:SetPoint("TOPRIGHT", frame.tabPanels[3], "TOPRIGHT", -20, -10)
+    frame.materialScanButton:SetText("Analyze Materials")
+    frame.materialScanButton:SetScript("OnClick", function()
+        if addon and addon.ShowRawMaterialAnalysis then
+            addon:ShowRawMaterialAnalysis()
+        end
+    end)
+    
+    -- Filter by material type (Tab 3)
+    frame.materialTypeDropdown = CreateFrame("Frame", "IronPawMaterialTypeDropdown", frame.tabPanels[3], "UIDropDownMenuTemplate")
+    frame.materialTypeDropdown:SetPoint("TOPLEFT", frame.tabPanels[3], "TOPLEFT", 5, -10)
+    UIDropDownMenu_SetWidth(frame.materialTypeDropdown, 120)
+    UIDropDownMenu_SetText(frame.materialTypeDropdown, "All Materials")
+    
+    -- Initialize material type dropdown (Tab 3)
+    UIDropDownMenu_Initialize(frame.materialTypeDropdown, function(self, level)
+        local materialTypes = {"All Materials", "Fish (20 qty)", "Fish (60 qty)", "Meat (20 qty)", "Vegetables (100 qty)"}
+        for _, materialType in ipairs(materialTypes) do
+            local info = UIDropDownMenu_CreateInfo()
+            info.text = materialType
+            info.value = materialType
+            info.func = function()
+                UIDropDownMenu_SetSelectedValue(frame.materialTypeDropdown, materialType)
+                if addon and addon.FilterMaterialsByType then
+                    addon:FilterMaterialsByType(materialType)
+                end
+            end
+            UIDropDownMenu_AddButton(info, level)
+        end
+    end)
+    
+    -- Instructions (Tab 3)
+    frame.materialInstructions = frame.tabPanels[3]:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    frame.materialInstructions:SetPoint("TOPLEFT", frame.materialTypeDropdown, "BOTTOMLEFT", 15, -20)
+    frame.materialInstructions:SetPoint("TOPRIGHT", frame.tabPanels[3], "TOPRIGHT", -20, -60)
+    frame.materialInstructions:SetJustifyH("LEFT")
+    frame.materialInstructions:SetJustifyV("TOP")
+    frame.materialInstructions:SetText("|cffffd100Raw Material Analysis:|r\nCompare costs to generate tokens using different raw materials:\n• Fish: Most need 20, Golden Carp needs 60\n• Meat: All need 20\n• Vegetables: All need 100 (most expensive per token)")
+    
+    -- Material results (Tab 3)
+    frame.materialScrollFrame = CreateFrame("ScrollFrame", nil, frame.tabPanels[3], "UIPanelScrollFrameTemplate")
+    frame.materialScrollFrame:SetPoint("TOPLEFT", frame.materialInstructions, "BOTTOMLEFT", 0, -20)
+    frame.materialScrollFrame:SetPoint("BOTTOMRIGHT", frame.tabPanels[3], "BOTTOMRIGHT", -30, 20)
+    
+    frame.materialContentFrame = CreateFrame("Frame", nil, frame.materialScrollFrame)
+    frame.materialContentFrame:SetSize(1, 1)
+    frame.materialScrollFrame:SetScrollChild(frame.materialContentFrame)
+    
+    frame.materialRows = {}
+    
+    -- Tab switching function
+    function addon:ShowTab(tabIndex)
+        local frame = self.mainFrame
+        if not frame or not frame.tabPanels then return end
+        
+        -- Hide all tabs
+        for i, panel in ipairs(frame.tabPanels) do
+            panel:Hide()
+        end
+        
+        -- Update tab button appearances
+        for i, tab in ipairs(frame.tabs) do
+            if i == tabIndex then
+                tab:SetNormalFontObject("GameFontHighlightLarge")
+                tab:LockHighlight()
+            else
+                tab:SetNormalFontObject("GameFontNormal")
+                tab:UnlockHighlight()
+            end
+        end
+        
+        -- Show selected tab
+        if frame.tabPanels[tabIndex] then
+            frame.tabPanels[tabIndex]:Show()
+            frame.activeTab = tabIndex
+        end
+    end
+    
     self.mainFrame = frame
     return frame
 end
@@ -321,7 +447,9 @@ end
     row:SetScript("OnEnter", function(self)
         self.bg:SetAlpha(0.3)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        IronPawProfit:ShowItemTooltip(self.itemData)
+        if IronPawProfitMainFrame.addon and IronPawProfitMainFrame.addon.ShowItemTooltip then
+            IronPawProfitMainFrame.addon:ShowItemTooltip(self.itemData)
+        end
     end)
     
     row:SetScript("OnLeave", function(self)
@@ -349,11 +477,11 @@ end
     
     -- Color code by profitability
     local color = "|cffffffff" -- White
-    if recommendation.profitPerToken > 50000 then -- > 5 gold per token
+    if recommendation.profitPerToken > 1000000 then -- > 100 gold per token
         color = "|cff00ff00" -- Green
-    elseif recommendation.profitPerToken > 20000 then -- > 2 gold per token
+    elseif recommendation.profitPerToken > 500000 then -- > 50 gold per token
         color = "|cffffff00" -- Yellow
-    elseif recommendation.profitPerToken < 5000 then -- < 50 silver per token
+    elseif recommendation.profitPerToken < 250000 then -- < 25 gold per token
         color = "|cffff8000" -- Orange
     end
     

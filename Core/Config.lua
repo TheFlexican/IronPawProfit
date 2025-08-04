@@ -38,7 +38,7 @@ local DefaultConfig = {
     maxStacksPerItem = 999,              -- Maximum stacks per item (999 = no limit)
     prioritizeTopItem = true,            -- Give top profitable item priority for all tokens
     dataMaxAge = 168,                    -- Maximum age of auction data in hours (7 days)
-    merchantChengContainerCost = 13500,  -- Cost per container from Merchant Cheng (5g in copper)
+    merchantChengContainerCost = 13500,  -- Cost per container from Merchant Cheng (1.35g in copper)
     windowPosition = {                   -- UI window position
         point = "CENTER",
         x = 0,

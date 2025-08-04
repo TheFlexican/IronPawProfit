@@ -1,11 +1,13 @@
 ## Interface: 110002
 ## Title: IronPaw Profit Calculator
 ## Notes: Calculates optimal raw material purchases from Nam Ironpaw and token generation via Merchant Cheng with market-adjusted recommendations based on auction house competition and sale success rates
-## Author: YourName
+## Author: Chifreak
+## Faction: Alliance
+## Server: PyrewoodVillage EU
 ## Version: 1.2.0
 ## SavedVariables: IronPawProfitDB
 ## Dependencies: Auctionator
-## OptionalDeps: Auctionator
+
 
 # Core files
 Core\Config.lua

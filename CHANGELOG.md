@@ -22,11 +22,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Net Profit Calculations**: Factor in both token generation cost and Nam Ironpaw profit potential
 - **Optimal Purchase Planning**: Recommend best raw materials for token generation investment
 
+#### Enhanced GUI Interface
+- **Tabbed Interface**: New 3-tab system (Nam Ironpaw, Token Arbitrage, Raw Materials)
+- **Token Arbitrage Tab**: Shows best opportunities combining token generation + sack purchases
+- **Raw Materials Tab**: Comprehensive cost comparison for all available cooking materials
+- **Shopping List Integration**: Displays exact quantities needed for 1, 5, and 10 tokens
+- **Price Refresh Button**: Manual price update functionality for current market data
+- **Interactive Tooltips**: Detailed breakdowns with shopping recommendations on hover
+- **Smart Disclaimers**: Timestamps and market volatility warnings
+- **Integrated Analysis**: Seamlessly switch between different analysis modes
+
 #### Enhanced Command System
 - **`/ironpaw cheng`**: Comprehensive raw material analysis for token generation
 - **`/ironpaw materials`**: Detailed purchase recommendations with investment planning
 - **`/ironpaw containers [cost]`**: Set or display Merchant Cheng container costs
 - **Integrated Help System**: Updated help with clear explanation of new features
+
+#### Smart Shopping List Features
+- **Quantity Recommendations**: Shows exact materials needed for 1, 5, and 10 token batches  
+- **Cost Breakdowns**: Displays total investment required for different batch sizes
+- **Market Volatility Warnings**: Timestamps and disclaimers about price fluctuations
+- **Interactive Planning**: Hover tooltips with detailed purchase recommendations
+- **Batch Size Optimization**: Start small (1-5 tokens) to test market before large investments
+
+### Technical Improvements
+- **Correct Material Quantities**: Fish (20/60), Meat (20), Vegetables (100) per container
+- **Database Architecture**: Enhanced database structure for raw material mappings
+- **Function Scoping**: Proper module organization and variable scoping
+- **Error Handling**: Robust error checking and debug logging
+- **Market Integration**: Seamless Auctionator integration for raw material pricing
 
 #### Intelligent Market Analysis
 - **Cross-Market Optimization**: Compare token generation costs vs direct Nam Ironpaw purchases
@@ -35,7 +59,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Risk Assessment Integration**: Evaluate both raw material purchase risks and final sale potential
 
 ### Configuration Enhancements
-- **`merchantChengContainerCost`**: Configurable container cost (default: 5 gold)
 - **Persistent Storage**: Container costs saved across sessions
 - **Dynamic Cost Updates**: Easy container cost adjustment via commands
 

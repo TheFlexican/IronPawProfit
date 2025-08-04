@@ -382,8 +382,8 @@ function IronPawProfitMerchantChengCalculator:Initialize(mainAddon)
         if IronPawProfit.db and IronPawProfit.db.profile and IronPawProfit.db.profile.merchantChengContainerCost then
             return IronPawProfit.db.profile.merchantChengContainerCost
         end
-        
-        return 50000 -- Default: 5 gold per container
+
+        return 13500 -- Default: 1.35 gold per container
     end
 
     return true

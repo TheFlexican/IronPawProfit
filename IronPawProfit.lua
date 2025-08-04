@@ -1,9 +1,6 @@
 --[[
     IronPaw Profit Calculator - Main Addon File
     
-    Author: TheFlexican
-    Version: 1.0.0
-    
     Description:
     This addon calculates profit potential for Nam Ironpaw vendor purchases in WoW MoP Classic.
     It analyzes auction house prices for cooking materials and recommends which sacks to buy
