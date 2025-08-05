@@ -53,12 +53,13 @@ IronPawProfitDatabase = {}
 ]]--
 local IronpawInventory = {
     -- Meat Sacks (Item IDs 87701-87705)
-    [87701] = { name = "Sack of Raw Tiger Steaks", tokens = 1, category = "Meat", stack = 1, contains = 25, materialID = 74833 },
-    [87702] = { name = "Sack of Mushan Ribs", tokens = 1, category = "Meat", stack = 1, contains = 25, materialID = 74834 },
-    [87703] = { name = "Sack of Raw Turtle Meat", tokens = 1, category = "Meat", stack = 1, contains = 25, materialID = 74837 },
-    [87704] = { name = "Sack of Raw Crab Meat", tokens = 1, category = "Meat", stack = 1, contains = 25, materialID = 74838 },
-    [87705] = { name = "Sack of Wildfowl Breasts", tokens = 1, category = "Meat", stack = 1, contains = 25, materialID = 74839 },
-    
+    [87701] = { name = "Sack of Raw Tiger Steaks", tokens = 1, category = "Meat", stack = 1, contains = 5, materialID = 74833 },
+    [87702] = { name = "Sack of Mushan Ribs", tokens = 1, category = "Meat", stack = 1, contains = 5, materialID = 74834 },
+    [87703] = { name = "Sack of Raw Turtle Meat", tokens = 1, category = "Meat", stack = 1, contains = 5, materialID = 74837 },
+    [87704] = { name = "Sack of Raw Crab Meat", tokens = 1, category = "Meat", stack = 1, contains = 5, materialID = 74838 },
+    [87705] = { name = "Sack of Wildfowl Breasts", tokens = 1, category = "Meat", stack = 1, contains = 5, materialID = 74839 },
+    [87730] = { name = "Sack of Crocolisk Belly", tokens = 1, category = "Seafood", stack = 1, contains = 5, materialID = 75014 },
+
     -- Vegetable Sacks (Item IDs 87706-87716)
     [87706] = { name = "Sack of Green Cabbages", tokens = 1, category = "Vegetable", stack = 1, contains = 25, materialID = 74840 }, 
     [87707] = { name = "Sack of Juicycrunch Carrots", tokens = 1, category = "Vegetable", stack = 1, contains = 25, materialID = 74841 },
@@ -74,16 +75,16 @@ local IronpawInventory = {
     [87714] = { name = "Sack of Striped Melons", tokens = 1, category = "Fruit", stack = 1, contains = 25, materialID = 74848 },
     
     -- Seafood Sacks (Item IDs 87721-87730)
-    [87721] = { name = "Sack of Jade Lungfish", tokens = 1, category = "Seafood", stack = 1, contains = 25, materialID = 74856 }, 
-    [87722] = { name = "Sack of Giant Mantis Shrimp", tokens = 1, category = "Seafood", stack = 1, contains = 25, materialID = 74857 }, 
-    [87723] = { name = "Sack of Emperor Salmon", tokens = 1, category = "Seafood", stack = 1, contains = 25, materialID = 74859 },
-    [87724] = { name = "Sack of Redbelly Mandarin", tokens = 1, category = "Seafood", stack = 1, contains = 25, materialID = 74860 },
-    [87725] = { name = "Sack of Tiger Gourami", tokens = 1, category = "Seafood", stack = 1, contains = 25, materialID = 74861 }, 
-    [87726] = { name = "Sack of Jewel Danio", tokens = 1, category = "Seafood", stack = 1, contains = 25, materialID = 74863 },
-    [87727] = { name = "Sack of Reef Octopus", tokens = 1, category = "Seafood", stack = 1, contains = 25, materialID = 74864 }, 
-    [87728] = { name = "Sack of Krasarang Paddlefish", tokens = 1, category = "Seafood", stack = 1, contains = 25, materialID = 74865 },
-    [87729] = { name = "Sack of Golden Carp", tokens = 1, category = "Seafood", stack = 1, contains = 25, materialID = 74866 },
-    [87730] = { name = "Sack of Crocolisk Belly", tokens = 1, category = "Seafood", stack = 1, contains = 25, materialID = 75014 },
+    [87721] = { name = "Sack of Jade Lungfish", tokens = 1, category = "Seafood", stack = 1, contains = 5, materialID = 74856 }, 
+    [87722] = { name = "Sack of Giant Mantis Shrimp", tokens = 1, category = "Seafood", stack = 1, contains = 5, materialID = 74857 }, 
+    [87723] = { name = "Sack of Emperor Salmon", tokens = 1, category = "Seafood", stack = 1, contains = 5, materialID = 74859 },
+    [87724] = { name = "Sack of Redbelly Mandarin", tokens = 1, category = "Seafood", stack = 1, contains = 5, materialID = 74860 },
+    [87725] = { name = "Sack of Tiger Gourami", tokens = 1, category = "Seafood", stack = 1, contains = 5, materialID = 74861 }, 
+    [87726] = { name = "Sack of Jewel Danio", tokens = 1, category = "Seafood", stack = 1, contains = 5, materialID = 74863 },
+    [87727] = { name = "Sack of Reef Octopus", tokens = 1, category = "Seafood", stack = 1, contains = 5, materialID = 74864 }, 
+    [87728] = { name = "Sack of Krasarang Paddlefish", tokens = 1, category = "Seafood", stack = 1, contains = 5, materialID = 74865 },
+    [87729] = { name = "Sack of Golden Carp", tokens = 1, category = "Seafood", stack = 1, contains = 5, materialID = 74866 },
+    
     
     -- Reagents (Direct items, not sacks)
     [74853] = { name = "100 Year Soy Sauce", tokens = 1, category = "Reagent", stack = 1 },

@@ -70,13 +70,13 @@ function IronPawProfitMerchantChengCalculator:Initialize(mainAddon)
         
         -- Safety check: ensure Database exists
         if not IronPawProfit.Database then
-            IronPawProfit:Print("DEBUG CHENG: Database not available")
+            -- Removed debug print
             return recommendations
         end
         
         -- Get container cost from Merchant Cheng
         local containerCost = self:GetContainerCost()
-        IronPawProfit:Print("DEBUG CHENG: Container cost = " .. IronPawProfit:FormatMoney(containerCost))
+        -- Removed debug print
         
         -- Step 1: Calculate all possible token generation costs
         local tokenGenerationCosts = {}
@@ -84,53 +84,43 @@ function IronPawProfitMerchantChengCalculator:Initialize(mainAddon)
         local itemsWithMaterialID = 0
         local itemsWithMarketData = 0
         local itemsWithPrice = 0
-        
+        local maxAHQty = 10000
+        if IronPawProfit.db and IronPawProfit.db.profile and IronPawProfit.db.profile.maxAHQty then
+            maxAHQty = IronPawProfit.db.profile.maxAHQty
+        end
         -- Extract all raw materials from the Nam Ironpaw database for token generation
         for itemID, itemData in pairs(IronPawProfit.Database) do
             itemsProcessed = itemsProcessed + 1
-            -- Only process items that have materialID (sacks with raw materials)
             if itemData.materialID then
                 itemsWithMaterialID = itemsWithMaterialID + 1
-                IronPawProfit:Print("DEBUG CHENG: Processing " .. (itemData.name or "Unknown") .. " -> material ID " .. itemData.materialID)
-                
                 if itemData.marketAvailable then
                     itemsWithMarketData = itemsWithMarketData + 1
                     local materialID = itemData.materialID
                     local materialName = self:GetRawMaterialName(materialID, itemData.name)
-                    
-                    -- Get market price for the raw material
                     local marketPrice = self:GetRawMaterialPrice(materialID)
-                    IronPawProfit:Print("DEBUG CHENG: Material " .. materialName .. " price = " .. (marketPrice and IronPawProfit:FormatMoney(marketPrice) or "nil"))
-                    
+                    local ahQuantity = self:GetMaterialMarketDepth(materialID)
                     if marketPrice and marketPrice > 0 then
                         itemsWithPrice = itemsWithPrice + 1
-                        -- Calculate cost per token using correct material quantities
-                        local materialsPerContainer = MaterialQuantities[materialID] or 25 -- Fallback to 25 if not found
+                        local materialsPerContainer = MaterialQuantities[materialID] or 25
                         local totalMaterialCost = marketPrice * materialsPerContainer
                         local totalCostPerToken = totalMaterialCost + containerCost
-                        
-                        table.insert(tokenGenerationCosts, {
-                            materialID = materialID,
-                            materialName = materialName,
-                            originalSackName = itemData.name,
-                            category = itemData.category,
-                            materialPrice = marketPrice,
-                            materialsNeeded = materialsPerContainer,
-                            containerCost = containerCost,
-                            totalCostPerToken = totalCostPerToken,
-                            -- Market analysis data
-                            marketDepth = self:GetMaterialMarketDepth(materialID),
-                            competitionLevel = self:GetMaterialCompetitionLevel(materialID)
-                        })
-                        
-                        IronPawProfit:Print("DEBUG CHENG: Token generation cost for " .. materialName .. ":")
-                        IronPawProfit:Print("  - Materials needed: " .. materialsPerContainer .. " x " .. IronPawProfit:FormatMoney(marketPrice))
-                        IronPawProfit:Print("  - Total cost per token: " .. IronPawProfit:FormatMoney(totalCostPerToken))
-                    else
-                        IronPawProfit:Print("DEBUG CHENG: " .. materialName .. " has no market price")
+                        -- Only include if AH quantity is below threshold
+                        if ahQuantity <= maxAHQty then
+                            table.insert(tokenGenerationCosts, {
+                                materialID = materialID,
+                                materialName = materialName,
+                                originalSackName = itemData.name,
+                                category = itemData.category,
+                                materialPrice = marketPrice,
+                                materialsNeeded = materialsPerContainer,
+                                containerCost = containerCost,
+                                totalCostPerToken = totalCostPerToken,
+                                marketDepth = ahQuantity,
+                                ahQuantity = ahQuantity,
+                                competitionLevel = self:GetMaterialCompetitionLevel(materialID)
+                            })
+                        end
                     end
-                else
-                    IronPawProfit:Print("DEBUG CHENG: " .. (itemData.name or "Unknown") .. " not market available")
                 end
             end
         end
@@ -139,10 +129,9 @@ function IronPawProfitMerchantChengCalculator:Initialize(mainAddon)
         local profitableSacks = {}
         for itemID, itemData in pairs(IronPawProfit.Database) do
             if itemData.marketAvailable and itemData.marketPrice > 0 then
-                local sackValue = itemData.marketPrice -- Value if we sell the sack
-                local tokenCost = itemData.tokenCost or 1 -- Cost in tokens to buy this sack
+                local sackValue = itemData.marketPrice
+                local tokenCost = itemData.tokenCost or 1
                 local profitPerToken = sackValue / tokenCost
-                
                 table.insert(profitableSacks, {
                     itemID = itemID,
                     sackName = itemData.name,
@@ -151,8 +140,6 @@ function IronPawProfitMerchantChengCalculator:Initialize(mainAddon)
                     tokenCost = tokenCost,
                     profitPerToken = profitPerToken
                 })
-                
-                IronPawProfit:Print("DEBUG CHENG: Nam Ironpaw sack value - " .. itemData.name .. ": " .. IronPawProfit:FormatMoney(sackValue) .. " per " .. tokenCost .. " token(s)")
             end
         end
         
@@ -162,17 +149,7 @@ function IronPawProfitMerchantChengCalculator:Initialize(mainAddon)
         -- Sort token generation methods by cost (lowest first) - these are the cheapest to make
         table.sort(tokenGenerationCosts, function(a, b) return a.totalCostPerToken < b.totalCostPerToken end)
         
-        IronPawProfit:Print("DEBUG CHENG: Best Nam Ironpaw purchases:")
-        for i = 1, math.min(3, #profitableSacks) do
-            local sack = profitableSacks[i]
-            IronPawProfit:Print("  " .. i .. ". " .. sack.sackName .. " = " .. IronPawProfit:FormatMoney(sack.profitPerToken) .. " per token")
-        end
-        
-        IronPawProfit:Print("DEBUG CHENG: Cheapest token generation methods:")
-        for i = 1, math.min(3, #tokenGenerationCosts) do
-            local method = tokenGenerationCosts[i]
-            IronPawProfit:Print("  " .. i .. ". " .. method.materialName .. " = " .. IronPawProfit:FormatMoney(method.totalCostPerToken) .. " per token")
-        end
+        -- Removed debug print summary
         
         -- Step 3: Calculate arbitrage opportunities
         -- Show the best arbitrage opportunity for each material (diversified recommendations)
@@ -224,33 +201,23 @@ function IronPawProfitMerchantChengCalculator:Initialize(mainAddon)
         
         -- Convert to array and add to recommendations
         for materialID, opportunity in pairs(materialOpportunities) do
+            -- Ensure materialName is always set for display
+            if not opportunity.materialName or opportunity.materialName == "Unknown" then
+                local itemName = GetItemInfo(opportunity.materialID)
+                opportunity.materialName = itemName or ("Material " .. opportunity.materialID)
+            end
             table.insert(recommendations, opportunity)
-            
-            IronPawProfit:Print("DEBUG CHENG: ARBITRAGE OPPORTUNITY:")
-            IronPawProfit:Print("  - Generate token: " .. opportunity.materialName .. " (" .. IronPawProfit:FormatMoney(opportunity.totalCostPerToken) .. ")")
-            IronPawProfit:Print("  - Buy sack: " .. opportunity.targetSackName .. " (" .. IronPawProfit:FormatMoney(opportunity.targetSackValue) .. ")")
-            IronPawProfit:Print("  - Arbitrage profit: " .. IronPawProfit:FormatMoney(opportunity.netProfit) .. " per token")
         end
         
         -- Debug summary
-        IronPawProfit:Print("DEBUG CHENG: Summary - Processed: " .. itemsProcessed .. " items")
-        IronPawProfit:Print("DEBUG CHENG: Items with materialID: " .. itemsWithMaterialID)
-        IronPawProfit:Print("DEBUG CHENG: Items with market data: " .. itemsWithMarketData)
-        IronPawProfit:Print("DEBUG CHENG: Items with price: " .. itemsWithPrice)
-        IronPawProfit:Print("DEBUG CHENG: Total recommendations: " .. #recommendations)
+        -- Removed debug print summary
         
         -- Sort by net profit (highest profit first)
         table.sort(recommendations, function(a, b)
             return a.netProfit > b.netProfit
         end)
         
-        local profitableCount = 0
-        for _, rec in ipairs(recommendations) do
-            if rec.netProfit > 0 then
-                profitableCount = profitableCount + 1
-            end
-        end
-        IronPawProfit:Print("DEBUG CHENG: Profitable recommendations: " .. profitableCount)
+        -- Removed debug print summary
         
         return recommendations
     end
@@ -266,15 +233,7 @@ function IronPawProfitMerchantChengCalculator:Initialize(mainAddon)
             string: Human-readable name for the raw material
     ]] --
     function MerchantChengCalculator:GetRawMaterialName(materialID, sackName)
-        -- Try to get actual item name from game
-        local itemName = GetItemInfo(materialID)
-        if itemName then
-            return itemName
-        end
-
-        -- Fallback: derive from sack name
-        local materialName = sackName:gsub("Sack of ", ""):gsub("s$", "") -- Remove "Sack of" and trailing "s"
-        return materialName .. " (ID: " .. materialID .. ")"
+        -- ...existing code...
     end
 
     --[[
@@ -288,19 +247,12 @@ function IronPawProfitMerchantChengCalculator:Initialize(mainAddon)
     ]] --
     function MerchantChengCalculator:GetRawMaterialPrice(materialID)
         if not IronPawProfit.AuctionatorInterface:IsAuctionatorAvailable() then
-            IronPawProfit:Print("DEBUG CHENG: Auctionator not available for material " .. materialID)
             return nil
         end
-
         local marketPrice, serverMedian, available = IronPawProfit.AuctionatorInterface:GetMarketPrice(materialID)
-
-        IronPawProfit:Print("DEBUG CHENG: Material " .. materialID .. " - marketPrice=" .. (marketPrice or "nil") ..
-                                ", serverMedian=" .. (serverMedian or "nil") .. ", available=" .. tostring(available))
-
         if available and (marketPrice or serverMedian) then
             return marketPrice or serverMedian
         end
-
         return nil
     end
 
@@ -465,15 +417,9 @@ function IronPawProfitMerchantChengCalculator:Initialize(mainAddon)
             unprofitable = {}
         }
 
-        IronPawProfit:Print("DEBUG CHENG: Starting raw material cost comparison")
         local recommendations = self:GenerateRawMaterialCostComparison()
-
-        -- Sort by cost per token (lowest first)
         table.sort(recommendations, function(a, b) return a.totalCostPerToken < b.totalCostPerToken end)
-
         report.recommendations = recommendations
-
-        -- Generate summary
         report.summary = {
             totalMaterials = #recommendations,
             cheapestMaterial = (#recommendations > 0) and recommendations[1].materialName or "None",
@@ -482,9 +428,6 @@ function IronPawProfitMerchantChengCalculator:Initialize(mainAddon)
             mostExpensiveCost = (#recommendations > 0) and recommendations[#recommendations].totalCostPerToken or 0,
             averageCost = self:CalculateAverageCost(recommendations)
         }
-
-        IronPawProfit:Print("DEBUG CHENG: Raw material comparison complete - " .. #recommendations .. " materials analyzed")
-        
         return report
     end
 
@@ -492,28 +435,25 @@ function IronPawProfitMerchantChengCalculator:Initialize(mainAddon)
     function MerchantChengCalculator:GenerateRawMaterialCostComparison()
         local recommendations = {}
         
-        IronPawProfit:Print("DEBUG CHENG: Generating raw material cost comparison")
-        
         -- Get all Nam Ironpaw sacks to find their corresponding raw materials
         local database = IronPawProfit.Database or {}
         if not database or next(database) == nil then
-            IronPawProfit:Print("DEBUG CHENG: ERROR - Database not available or empty")
             return {}
         end
-        
-        IronPawProfit:Print("DEBUG CHENG: Found database with items available")
-        
+        local maxAHQty = 10000
+        if IronPawProfit.db and IronPawProfit.db.profile and IronPawProfit.db.profile.maxAHQty then
+            maxAHQty = IronPawProfit.db.profile.maxAHQty
+        end
         for itemID, itemData in pairs(database) do
             if itemData.materialID then
                 local materialID = itemData.materialID
                 local materialPrice = self:GetRawMaterialPrice(materialID)
-                
-                if materialPrice and materialPrice > 0 then
-                    local quantity = MaterialQuantities[materialID] or 25 -- Fallback to 25 if not found
+                local ahQuantity = self:GetMaterialMarketDepth(materialID)
+                if materialPrice and materialPrice > 0 and ahQuantity <= maxAHQty then
+                    local quantity = MaterialQuantities[materialID] or 25
                     local materialCost = materialPrice * quantity
                     local containerCost = self:GetContainerCost()
                     local totalCostPerToken = materialCost + containerCost
-                    
                     table.insert(recommendations, {
                         materialID = materialID,
                         materialName = GetItemInfo(materialID) or ("Material " .. materialID),
@@ -523,18 +463,13 @@ function IronPawProfitMerchantChengCalculator:Initialize(mainAddon)
                         containerCost = containerCost,
                         totalCostPerToken = totalCostPerToken,
                         originalSackName = itemData.name,
-                        marketDepth = self:GetMaterialMarketDepth(materialID) or 0,
+                        marketDepth = ahQuantity,
+                        ahQuantity = ahQuantity,
                         competitionLevel = self:GetMaterialCompetitionLevel(materialID) or 0
                     })
-                    
-                    IronPawProfit:Print("DEBUG CHENG: " .. (GetItemInfo(materialID) or ("Material " .. materialID)) .. " - " .. 
-                        quantity .. " needed @ " .. IronPawProfit:FormatMoney(materialPrice) .. 
-                        " = " .. IronPawProfit:FormatMoney(totalCostPerToken) .. " per token")
                 end
             end
         end
-        
-        IronPawProfit:Print("DEBUG CHENG: Raw material cost analysis complete - " .. #recommendations .. " materials")
         return recommendations
     end
 
@@ -560,33 +495,7 @@ function IronPawProfitMerchantChengCalculator:Initialize(mainAddon)
             number: Average profit per token in copper
     ]] --
     function MerchantChengCalculator:CalculateAverageProfit(profitableItems)
-        report.summary = {
-            totalMaterials = #recommendations,
-            profitableMaterials = #report.profitable,
-            unprofitableMaterials = #report.unprofitable,
-            bestProfitPerToken = (#report.profitable > 0) and report.profitable[1].netProfit or 0,
-            bestMaterial = (#report.profitable > 0) and report.profitable[1].materialName or "None",
-            averageProfit = self:CalculateAverageProfit(report.profitable)
-        }
-
-        IronPawProfit:Print(
-            "DEBUG CHENG: Report summary - Total: " .. report.summary.totalMaterials .. ", Profitable: " ..
-                report.summary.profitableMaterials .. ", Unprofitable: " .. report.summary.unprofitableMaterials)
-
-        -- Generate warnings
-        if not IronPawProfit.AuctionatorInterface:IsAuctionatorAvailable() then
-            table.insert(report.warnings, "Auctionator not available - raw material prices unavailable")
-        end
-
-        if #report.profitable == 0 then
-            table.insert(report.warnings, "No profitable raw materials found - container costs may be too high")
-        end
-
-        if report.summary.averageProfit < 10000 then -- Less than 1 gold average profit
-            table.insert(report.warnings, "Low profit margins - consider manual token acquisition instead")
-        end
-
-        return report
+        -- ...existing code...
     end
 
     --[[
