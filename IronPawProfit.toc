@@ -4,7 +4,7 @@
 ## Author: Chifreak
 ## Faction: Alliance
 ## Server: PyrewoodVillage EU
-## Version: 1.2.0
+## Version: 1.2.2
 ## SavedVariables: IronPawProfitDB
 ## Dependencies: Auctionator
 
