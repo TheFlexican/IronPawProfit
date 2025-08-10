@@ -1,0 +1,23 @@
+## Interface: 110002
+## Title: IronPaw Profit Calculator
+## Notes: Analyzes profit from Nam Ironpaw, token generation from Merchant Cheng, and seed planting from Merchant Greenfield. Requires Auctionator.
+## Author: Chifreak
+## Version: 1.0.0
+## SavedVariables: IronPawProfitDB
+## Dependencies: Auctionator
+
+
+# Core files
+Core\Config.lua
+Core\Database.lua
+Core\AuctionatorInterface.lua
+Core\GreenfieldCalculator.lua
+Core\ProfitCalculator.lua
+Core\MerchantChengCalculator.lua
+
+# UI files
+UI\MainFrame.lua
+UI\ProfitDisplay.lua
+
+# Main addon file
+IronPawProfit.lua
