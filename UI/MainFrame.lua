@@ -62,7 +62,8 @@ function IronPawProfitMainFrame:CreateMainFrame()
     local addon = self.addon -- Local reference for closures
     
     -- Main frame
-    local frame = CreateFrame("Frame", "IronPawProfitMainFrame", UIParent, "BasicFrameTemplateWithInset")
+    -- Use a unique global name for the frame to avoid colliding with the module table
+    local frame = CreateFrame("Frame", "IronPawProfit_MainFrame", UIParent, "BasicFrameTemplateWithInset")
     frame:SetSize(700, 600)
     frame:SetPoint("CENTER")
     frame:SetMovable(true)
@@ -71,6 +72,23 @@ function IronPawProfitMainFrame:CreateMainFrame()
     frame:SetScript("OnDragStart", frame.StartMoving)
     frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
     frame:Hide()
+    
+    -- Allow closing the frame with the Escape key
+    do
+        local name = frame:GetName()
+        if name then
+            local exists = false
+            for _, v in ipairs(UISpecialFrames) do
+                if v == name then
+                    exists = true
+                    break
+                end
+            end
+            if not exists then
+                table.insert(UISpecialFrames, name)
+            end
+        end
+    end
     
     -- Title
     frame.title = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
@@ -153,6 +171,10 @@ function IronPawProfitMainFrame:CreateMainFrame()
         addon.db.profile.minProfit = value
         addon:UpdateProfitCalculations()
         editbox:ClearFocus()
+    end)
+    frame.thresholdEditBox:SetScript("OnEscapePressed", function(editbox)
+        editbox:ClearFocus()
+        if addon and addon.mainFrame then addon.mainFrame:Hide() end
     end)
     
     frame.goldLabel = frame.tabPanels[1]:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -287,6 +309,10 @@ function IronPawProfitMainFrame:CreateMainFrame()
     frame.seedQuantityEditBox:SetScript("OnEnterPressed", function(editbox)
         addon:ShowSeedAnalysis()
         editbox:ClearFocus()
+    end)
+    frame.seedQuantityEditBox:SetScript("OnEscapePressed", function(editbox)
+        editbox:ClearFocus()
+        if addon and addon.mainFrame then addon.mainFrame:Hide() end
     end)
 
     frame.seedScanButton = CreateFrame("Button", nil, frame.tabPanels[4], "GameMenuButtonTemplate")

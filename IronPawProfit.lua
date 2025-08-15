@@ -32,7 +32,7 @@ local addonName, addon = ...
 
 -- Create main addon object
 IronPawProfit = {}
-IronPawProfit.version = "1.0.0"
+IronPawProfit.version = "1.0.1"
 
 -- Initialization state tracking
 -- Ensures modules are loaded in the correct order

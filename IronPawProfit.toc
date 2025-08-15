@@ -1,8 +1,9 @@
-## Interface: 110002
+## Interface: 50500
 ## Title: IronPaw Profit Calculator
 ## Notes: Analyzes profit from Nam Ironpaw, token generation from Merchant Cheng, and seed planting from Merchant Greenfield. Requires Auctionator.
-## Author: Chifreak
-## Version: 1.0.0
+## X-Author: Chifreak
+## X-Server: Pyrewood Village EU
+## Version: 1.0.1
 ## SavedVariables: IronPawProfitDB
 ## Dependencies: Auctionator
 

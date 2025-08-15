@@ -1,18 +1,13 @@
-# IronPaw Profit Calculator v1.0.0
+# IronPaw Profit Calculator v1.0.1
 
 A World of Warcraft addon for Mists of Pandaria that helps you maximize your profits with Ironpaw Tokens. It provides a comprehensive suite of tools to analyze the market, generate tokens cheaply, and make the smartest purchasing decisions.
 
 ## Features
 
-This addon is more than just a simple calculator. It's a full-featured economic tool for the aspiring Ironpaw entrepreneur.
+This addon is more than just a simple calculator.
 
 ### 1. Nam Ironpaw Profit Advisor
 - **Core Functionality**: Calculates the potential profit from buying sacks of cooking materials from Nam Ironpaw in Halfhill.
-- **Smart Recommendations**: Goes beyond simple profit calculation. The addon analyzes market conditions to recommend items that are not only profitable but also likely to sell.
-- **Market-Adjusted Priority**: Recommendations are adjusted based on:
-    - **Competition Level**: Low, Medium, High, or Very High.
-    - **Market Depth**: The number of current listings on the Auction House.
-    - **Sale Speed**: How quickly an item typically sells.
 - **Detailed UI**: A clear, sortable list shows you the profit per token, recommended stacks to buy, and total potential profit for each item.
 
 ### 2. Merchant Cheng Token Generation
