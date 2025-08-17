@@ -125,7 +125,17 @@ configFrame:SetScript("OnEvent", function(self, event, loadedAddonName)
             
             self:Print("=== Debug Information ===")
             self:Print("Addon Version: " .. (self.version or "Unknown"))
-            self:Print("Tokens Available: " .. (self.GetIronpawTokenCount and self:GetIronpawTokenCount() or "Unknown"))
+            local currentTokens = (self.GetIronpawTokenCount and self:GetIronpawTokenCount() or nil)
+            local totalTokens = nil
+            if self.GetTotalStoredTokens then
+                local ok, res = pcall(function() return self:GetTotalStoredTokens() end)
+                if ok and type(res) == "number" then totalTokens = res end
+            end
+            if totalTokens then
+                self:Print(string.format("Tokens Available: %s (Total: %d)", tostring(currentTokens or "Unknown"), totalTokens))
+            else
+                self:Print("Tokens Available: " .. (currentTokens or "Unknown"))
+            end
             self:Print("Database Items: " .. (self.GetDatabaseItemCount and self:GetDatabaseItemCount() or "Unknown"))
             
             if self.AuctionatorInterface then

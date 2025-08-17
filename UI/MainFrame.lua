@@ -98,7 +98,7 @@ function IronPawProfitMainFrame:CreateMainFrame()
     -- Create tab system
     frame.tabs = {}
     frame.activeTab = 1
-    
+
     local function CreateTab(parent, text, index)
         local tab = CreateFrame("Button", nil, parent, "GameMenuButtonTemplate")
         tab:SetSize(120, 25)
@@ -107,7 +107,7 @@ function IronPawProfitMainFrame:CreateMainFrame()
         tab:SetScript("OnClick", function() self:ShowTab(index) end)
         return tab
     end
-    
+
     frame.tabs[1] = CreateTab(frame, "Nam Ironpaw", 1)
     frame.tabs[2] = CreateTab(frame, "Token Arbitrage", 2)
     frame.tabs[3] = CreateTab(frame, "Raw Materials", 3)
@@ -134,32 +134,16 @@ function IronPawProfitMainFrame:CreateMainFrame()
     frame.tokenDisplay.text:SetPoint("LEFT", frame.tokenDisplay.icon, "RIGHT", 5, 0)
     frame.tokenDisplay.text:SetText("Tokens: 0")
     
-    frame.scanButton = CreateFrame("Button", nil, frame.tabPanels[1], "GameMenuButtonTemplate")
+    frame.scanButton = CreateFrame("Button", nil, frame, "GameMenuButtonTemplate")
     frame.scanButton:SetSize(100, 25)
-    frame.scanButton:SetPoint("TOPRIGHT", -20, contentY - 10)
+    frame.scanButton:SetPoint("TOPRIGHT", -20, -25)
     frame.scanButton:SetText("Scan AH")
     frame.scanButton:SetScript("OnClick", function() addon:RefreshAuctionData() end)
-    
-    frame.categoryDropdown = CreateFrame("Frame", "IronPawCategoryDropdown", frame.tabPanels[1], "UIDropDownMenuTemplate")
-    frame.categoryDropdown:SetPoint("TOPLEFT", frame.tokenDisplay, "BOTTOMLEFT", -15, -10)
-    UIDropDownMenu_SetWidth(frame.categoryDropdown, 120)
-    UIDropDownMenu_SetText(frame.categoryDropdown, "All Categories")
-    UIDropDownMenu_Initialize(frame.categoryDropdown, function(self, level)
-        local categories = addon.Categories or {"All", "Meat", "Seafood", "Vegetable", "Fruit", "Reagent", "Bundle"}
-        for _, category in ipairs(categories) do
-            local info = UIDropDownMenu_CreateInfo()
-            info.text = category
-            info.value = category
-            info.func = function()
-                UIDropDownMenu_SetSelectedValue(frame.categoryDropdown, category)
-                addon:FilterByCategory(category)
-            end
-            UIDropDownMenu_AddButton(info, level)
-        end
-    end)
+
     
     frame.thresholdLabel = frame.tabPanels[1]:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    frame.thresholdLabel:SetPoint("TOPLEFT", frame.categoryDropdown, "BOTTOMLEFT", 15, -10)
+    -- Place Min Profit label to the right of the token display (same row)
+    frame.thresholdLabel:SetPoint("LEFT", frame.tokenDisplay, "RIGHT", 20, 0)
     frame.thresholdLabel:SetText("Min Profit:")
     
     frame.thresholdEditBox = CreateFrame("EditBox", nil, frame.tabPanels[1], "InputBoxTemplate")
@@ -181,20 +165,59 @@ function IronPawProfitMainFrame:CreateMainFrame()
     frame.goldLabel:SetPoint("LEFT", frame.thresholdEditBox, "RIGHT", 5, 0)
     frame.goldLabel:SetText("gold")
     
-    frame.updateButton = CreateFrame("Button", nil, frame.tabPanels[1], "GameMenuButtonTemplate")
-    frame.updateButton:SetSize(80, 25)
-    frame.updateButton:SetPoint("LEFT", frame.goldLabel, "RIGHT", 20, 0)
-    frame.updateButton:SetText("Update")
-    frame.updateButton:SetScript("OnClick", function()
-        local editbox = self.addon.mainFrame.thresholdEditBox
-        local value = tonumber(editbox:GetText()) or 1
-        self.addon.db.profile.minProfit = value
-        self.addon:UpdateProfitCalculations()
+
+
+    -- Tokens to Spend input
+    frame.tokensLabel = frame.tabPanels[1]:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    -- Place Tokens-to-spend controls on the same row to the right of the Min Profit editbox
+    frame.tokensLabel:SetPoint("LEFT", frame.thresholdEditBox, "RIGHT", 50, 0)
+    frame.tokensLabel:SetText("Tokens to spend:")
+
+    frame.tokensToSpendEditBox = CreateFrame("EditBox", nil, frame.tabPanels[1], "InputBoxTemplate")
+    frame.tokensToSpendEditBox:SetSize(80, 20)
+    frame.tokensToSpendEditBox:SetPoint("LEFT", frame.tokensLabel, "RIGHT", 5, 0)
+    frame.tokensToSpendEditBox:SetAutoFocus(false)
+    -- Initialize with saved value or aggregated total
+    do
+        local saved = addon.db.profile.tokensToSpend
+        local total = nil
+        if addon.GetTotalStoredTokens then
+            local ok, res = pcall(function() return addon:GetTotalStoredTokens() end)
+            if ok and type(res) == "number" then total = res end
+        end
+        if not total then total = addon:GetIronpawTokenCount() end
+        if type(saved) == "number" and saved > 0 then
+            frame.tokensToSpendEditBox:SetText(tostring(saved))
+        else
+            frame.tokensToSpendEditBox:SetText(tostring(total))
+        end
+    end
+
+    frame.tokensToSpendEditBox:SetScript("OnEnterPressed", function(editbox)
+        local value = tonumber(editbox:GetText())
+        if value == nil or value < 0 then
+            -- invalid input, reset to aggregated total
+            local total = nil
+            if addon.GetTotalStoredTokens then
+                local ok, res = pcall(function() return addon:GetTotalStoredTokens() end)
+                if ok and type(res) == "number" then total = res end
+            end
+            if not total then total = addon:GetIronpawTokenCount() end
+            editbox:SetText(tostring(total))
+            addon.db.profile.tokensToSpend = nil
+        else
+            addon.db.profile.tokensToSpend = math.floor(value)
+        end
+        addon:UpdateProfitCalculations()
+        editbox:ClearFocus()
+    end)
+    frame.tokensToSpendEditBox:SetScript("OnEscapePressed", function(editbox)
+        editbox:ClearFocus()
     end)
     
     frame.summaryPanel = CreateFrame("Frame", nil, frame.tabPanels[1], "BackdropTemplate")
     frame.summaryPanel:SetSize(660, 60)
-    frame.summaryPanel:SetPoint("TOPLEFT", frame.thresholdLabel, "BOTTOMLEFT", 0, -20)
+    frame.summaryPanel:SetPoint("TOPLEFT", frame.tokenDisplay, "BOTTOMLEFT", 0, -40)
     frame.summaryPanel:SetBackdrop({ bgFile = "Interface\\ChatFrame\\ChatFrameBackground", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", tile = true, tileSize = 16, edgeSize = 16, insets = { left = 3, right = 3, top = 5, bottom = 3 } })
     frame.summaryPanel:SetBackdropColor(0, 0, 0, 0.25)
     frame.summaryPanel:SetBackdropBorderColor(0.4, 0.4, 0.4)
@@ -401,7 +424,11 @@ function IronPawProfitMainFrame:UpdateTokenDisplay(tokens)
 end
 
 function IronPawProfitMainFrame:FilterByCategory(category)
+    if not category or category == "" then
+        category = "All"
+    end
     self.addon.selectedCategory = category
+    -- Keep the same token pool when refiltering
     self:UpdateProfitCalculations()
 end
 
@@ -411,13 +438,28 @@ function IronPawProfitMainFrame:UpdateProfitCalculations()
         self.addon.mainFrame.summaryText:SetText("Waiting for data to load...")
         return
     end
-    
-    local tokens = self.addon:GetIronpawTokenCount()
+    -- Determine tokens to use: user-entered tokensToSpend -> aggregated total -> current character
+    local tokens = nil
+    local userTokens = self.addon.db and self.addon.db.profile and self.addon.db.profile.tokensToSpend
+    if type(userTokens) == "number" and userTokens >= 0 then
+        tokens = math.floor(userTokens)
+    else
+        if self.addon.GetTotalStoredTokens then
+            local ok, total = pcall(function() return self.addon:GetTotalStoredTokens() end)
+            if ok and type(total) == "number" and total >= 0 then
+                tokens = total
+            end
+        end
+        if tokens == nil then
+            tokens = self.addon:GetIronpawTokenCount()
+        end
+    end
     local category = self.addon.selectedCategory or "All"
     local report = self.addon.ProfitCalculator:GenerateInvestmentReport(tokens)
     
     self:UpdateSummaryDisplay(report)
-    self:UpdateResultsDisplay(report.recommendations, category)
+    -- Pass the actual token pool used by the report into the results display
+    self:UpdateResultsDisplay(report.recommendations, category, report.availableTokens)
 end
 
 function IronPawProfitMainFrame:UpdateSummaryDisplay(report)
@@ -430,12 +472,13 @@ function IronPawProfitMainFrame:UpdateSummaryDisplay(report)
     local summary = report.summary
     local warnings = report.warnings or {}
     
+    -- Use the report's availableTokens value to display what token pool was used
+    local usedTokens = report.availableTokens or 0
     local text = string.format(
-        "Recommendations: %d items | Tokens to spend: %d/%d | Total profit potential: %s\n" ..
+        "Recommendations: %d items | Tokens used for calculation: %d | Total profit potential: %s\n" ..
         "Average profit per token: %s | Top item: %s",
         summary.totalRecommendations or 0,
-        summary.totalTokensToSpend or 0,
-        report.availableTokens or 0,
+        usedTokens,
         self.addon:FormatMoney(summary.totalProfitPotential or 0),
         self.addon:FormatMoney(summary.averageProfitPerToken or 0),
         summary.topProfitItem or "None"
@@ -448,7 +491,7 @@ function IronPawProfitMainFrame:UpdateSummaryDisplay(report)
     self.addon.mainFrame.summaryText:SetText(text)
 end
 
-function IronPawProfitMainFrame:UpdateResultsDisplay(recommendations, category)
+function IronPawProfitMainFrame:UpdateResultsDisplay(recommendations, category, tokensUsed)
     if not self.addon.mainFrame then return end
     
     for _, row in pairs(self.addon.mainFrame.resultRows) do
@@ -467,7 +510,7 @@ function IronPawProfitMainFrame:UpdateResultsDisplay(recommendations, category)
     local yOffset = -10
     for i, rec in ipairs(filteredRecs) do
         local row = self:GetOrCreateResultRow(i)
-        self:UpdateResultRow(row, rec, i)
+        self:UpdateResultRow(row, rec, i, tokensUsed)
         row:SetPoint("TOPLEFT", self.addon.mainFrame.contentFrame, "TOPLEFT", 10, yOffset)
         row:Show()
         yOffset = yOffset - 35
@@ -535,7 +578,7 @@ function IronPawProfitMainFrame:GetOrCreateResultRow(index)
     return row
 end
 
-function IronPawProfitMainFrame:UpdateResultRow(row, recommendation, index)
+function IronPawProfitMainFrame:UpdateResultRow(row, recommendation, index, tokensUsed)
     row.itemData = recommendation.itemData
     row.recommendation = recommendation
     
@@ -551,10 +594,36 @@ function IronPawProfitMainFrame:UpdateResultRow(row, recommendation, index)
     end
     
     row.name:SetText(color .. (recommendation.itemData.name or "Unknown"))
-    row.tokens:SetText(string.format("%d", recommendation.itemData.tokenCost))
+    -- Show the token cost per stack for the item (e.g. 1 token per sack)
+    local tokenCostPerStack = (recommendation.itemData and recommendation.itemData.tokenCost) or 0
+    row.tokens:SetText(string.format("%d", tokenCostPerStack))
     row.profit:SetText(color .. self.addon:FormatMoneyPrecise(recommendation.profitPerToken))
-    row.quantity:SetText(string.format("%d", recommendation.recommendedStacks or 0))
-    row.totalProfit:SetText(color .. self.addon:FormatMoney(recommendation.totalProfit or 0))
+    -- Show the global tokens-to-spend value (same for every row) rather than the recommended stacks
+    local displayTokensUsed = tokensUsed or 0
+    row.quantity:SetText(string.format("%d", displayTokensUsed))
+    -- Also show the total profit if all available tokens (the same token pool used for the report)
+    local item = recommendation.itemData or {}
+    local totalTokens = tokensUsed
+    if totalTokens == nil then
+        -- Fallback to aggregated stored tokens, then current character
+        if self.addon.GetTotalStoredTokens then
+            local ok, res = pcall(function() return self.addon:GetTotalStoredTokens() end)
+            if ok and type(res) == "number" then totalTokens = res end
+        end
+        if totalTokens == nil then
+            totalTokens = self.addon:GetIronpawTokenCount()
+        end
+    end
+
+    local stacksAll = 0
+    if item.tokenCost and item.tokenCost > 0 then
+        stacksAll = math.floor(totalTokens / item.tokenCost)
+    end
+
+    local perStackProfit = recommendation.profitPerStack or (item.marketPrice and item.marketPrice * (item.stackSize or 1) or 0)
+    local totalProfitAll = stacksAll * (perStackProfit or 0)
+
+    row.totalProfit:SetText(color .. self.addon:FormatMoney(totalProfitAll or 0))
 end
 
 function IronPawProfitMainFrame:ShowItemTooltip(itemData)

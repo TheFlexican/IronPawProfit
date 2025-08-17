@@ -810,9 +810,27 @@ function IronPawProfit:ShowMainFrame()
 end
 
 function IronPawProfit:UpdateProfitCalculations()
-    -- This will be implemented by the profit calculator module
-    if self.ProfitCalculator and self.ProfitCalculator.UpdateProfitCalculations then
-        self.ProfitCalculator:UpdateProfitCalculations()
+    -- Prefer aggregated stored tokens across characters when available
+    local tokens = nil
+    if self.GetTotalStoredTokens then
+        local ok, total = pcall(function() return self:GetTotalStoredTokens() end)
+        if ok and type(total) == "number" and total >= 0 then
+            tokens = total
+        end
+    end
+
+    if tokens == nil then
+        tokens = self:GetIronpawTokenCount()
+    end
+
+    -- Delegate to profit calculator with chosen token count
+    if self.ProfitCalculator and self.ProfitCalculator.GenerateInvestmentReport then
+        -- Some profit modules expect UpdateProfitCalculations; call accordingly
+        if self.ProfitCalculator.UpdateProfitCalculations then
+            pcall(function() self.ProfitCalculator:UpdateProfitCalculations(tokens) end)
+        else
+            pcall(function() self.ProfitCalculator:GenerateInvestmentReport(tokens) end)
+        end
     end
 end
 
