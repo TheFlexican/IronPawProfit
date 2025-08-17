@@ -333,4 +333,97 @@ function IronPawProfitDatabase:AttachFunctions()
         local name, link = GetItemInfo(itemID)
         return link or ("Item:" .. itemID)
     end
+
+    ------------------------------------------------------------------
+    -- Ironpaw Token Storage / Ledger
+    -- Persist per-character token balances and provide helpers to
+    -- reconcile changes (e.g. when a character spends tokens at a vendor)
+    ------------------------------------------------------------------
+    function addon:InitTokenStorage()
+        -- Ensure saved variable table exists
+        if not IronPawProfitDB then IronPawProfitDB = {} end
+        if not IronPawProfitDB.tokenBalances then
+            IronPawProfitDB.tokenBalances = {}
+        end
+    end
+
+    function addon:GetCharacterKey()
+        local name = UnitName("player") or "Unknown"
+        local realm = GetRealmName() or "UnknownRealm"
+        return realm .. "-" .. name
+    end
+
+    function addon:SaveCurrentCharacterTokenBalance(tokens)
+        if type(tokens) ~= "number" then
+            self:Print("[TokenStorage] Invalid token value provided to SaveCurrentCharacterTokenBalance")
+            return false
+        end
+
+        self:InitTokenStorage()
+        local key = self:GetCharacterKey()
+        IronPawProfitDB.tokenBalances[key] = { tokens = tokens, lastUpdated = time() }
+        return true
+    end
+
+    function addon:GetStoredTokenBalance(charKey)
+        if not IronPawProfitDB or not IronPawProfitDB.tokenBalances then return nil end
+        local entry = IronPawProfitDB.tokenBalances[charKey]
+        if entry and type(entry.tokens) == "number" then
+            return entry.tokens
+        end
+        return nil
+    end
+
+    function addon:GetTotalStoredTokens()
+        if not IronPawProfitDB or not IronPawProfitDB.tokenBalances then return 0 end
+        local sum = 0
+        for k, v in pairs(IronPawProfitDB.tokenBalances) do
+            if v and type(v.tokens) == "number" then
+                sum = sum + v.tokens
+            end
+        end
+        return sum
+    end
+
+    -- Reconcile token change for current character.
+    -- If tokens decreased, we assume tokens were spent and update stored balance.
+    -- Returns: oldBalance, newBalance, delta (positive if decreased)
+    function addon:ReconcileTokenChange(newTokens)
+        if type(newTokens) ~= "number" then
+            self:Print("[TokenStorage] ReconcileTokenChange received invalid token count")
+            return nil
+        end
+
+        self:InitTokenStorage()
+        local key = self:GetCharacterKey()
+        local oldEntry = IronPawProfitDB.tokenBalances[key]
+        local oldTokens = (oldEntry and type(oldEntry.tokens) == "number") and oldEntry.tokens or nil
+
+        -- If we have no previous record, just save and return
+        if oldTokens == nil then
+            IronPawProfitDB.tokenBalances[key] = { tokens = newTokens, lastUpdated = time() }
+            return nil, newTokens, 0
+        end
+
+        if newTokens == oldTokens then
+            -- No change
+            IronPawProfitDB.tokenBalances[key].lastUpdated = time()
+            return oldTokens, newTokens, 0
+        end
+
+        local delta = oldTokens - newTokens
+        -- Update saved balance to the new observed value
+        IronPawProfitDB.tokenBalances[key].tokens = newTokens
+        IronPawProfitDB.tokenBalances[key].lastUpdated = time()
+
+        if delta > 0 then
+            -- Tokens decreased (spent)
+            self:Print(string.format("[TokenStorage] %s spent %d Ironpaw token(s). Recorded change.", key, delta))
+        elseif delta < 0 then
+            -- Tokens increased (gained)
+            self:Print(string.format("[TokenStorage] %s gained %d Ironpaw token(s). Recorded change.", key, -delta))
+        end
+
+        return oldTokens, newTokens, delta
+    end
 end

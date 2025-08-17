@@ -384,8 +384,20 @@ end
 
 function IronPawProfitMainFrame:UpdateTokenDisplay(tokens)
     if not self.addon.mainFrame then return end
-    tokens = tokens or self.addon:GetIronpawTokenCount()
-    self.addon.mainFrame.tokenDisplay.text:SetText(string.format("Tokens: %d", tokens))
+    local current = tokens or self.addon:GetIronpawTokenCount()
+    local total = nil
+    if self.addon.GetTotalStoredTokens then
+        local ok, res = pcall(function() return self.addon:GetTotalStoredTokens() end)
+        if ok and type(res) == "number" then
+            total = res
+        end
+    end
+
+    if total then
+        self.addon.mainFrame.tokenDisplay.text:SetText(string.format("Tokens: %d (Total: %d)", current, total))
+    else
+        self.addon.mainFrame.tokenDisplay.text:SetText(string.format("Tokens: %d", current))
+    end
 end
 
 function IronPawProfitMainFrame:FilterByCategory(category)

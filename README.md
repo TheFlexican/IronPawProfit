@@ -1,4 +1,4 @@
-# IronPaw Profit Calculator v1.0.1
+# IronPaw Profit Calculator v1.0.3
 
 A World of Warcraft addon for Mists of Pandaria that helps you maximize your profits with Ironpaw Tokens. It provides a comprehensive suite of tools to analyze the market, generate tokens cheaply, and make the smartest purchasing decisions.
 
@@ -23,6 +23,10 @@ This addon is more than just a simple calculator.
 - **Multi-Tabbed Window**: All features are organized into intuitive tabs for Nam Ironpaw, Merchant Cheng (Arbitrage & Raw Materials), and Greenfield Seeds.
 - **At-a-Glance Summary**: Each tab provides a summary of the best opportunities.
 - **Detailed Tooltips**: Hover over any item for a detailed breakdown of its market data and profit calculation.
+
+### Token Storage
+- The addon now persistently records Ironpaw token counts per character and shows an aggregated total in the UI when available.
+- Token balances are reconciled automatically when your bag contents change and on login; decreases are logged as tokens spent.
 
 ## Usage
 

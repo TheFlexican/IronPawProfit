@@ -32,7 +32,7 @@ local addonName, addon = ...
 
 -- Create main addon object
 IronPawProfit = {}
-IronPawProfit.version = "1.0.1"
+IronPawProfit.version = "1.0.3"
 
 -- Initialization state tracking
 -- Ensures modules are loaded in the correct order
@@ -131,6 +131,11 @@ function IronPawProfit:OnInitialize()
     -- Step 2: Initialize database
     self:InitializeDatabase()
     self.initState.database = true
+
+    -- Initialize token storage if database provided helpers (functions are attached to addon)
+    if self.InitTokenStorage then
+        self:InitTokenStorage()
+    end
     
     -- Step 3: Initialize Auctionator interface
     self:InitializeAuctionatorInterface()
@@ -176,7 +181,10 @@ function IronPawProfit:OnPlayerLogin()
         self:Print("|cffff0000Warning:|r Auctionator not detected. Install Auctionator for accurate market prices.")
     end
     
-    -- Initialize token count
+    -- Initialize token storage for this session and update token count
+    if self.InitTokenStorage then
+        self:InitTokenStorage()
+    end
     self:UpdateIronpawTokens()
 end
 
@@ -186,7 +194,21 @@ end
 ]]--
 function IronPawProfit:OnBagUpdate()
     -- Update token count when bags change
-    self:UpdateIronpawTokens()
+    -- Reconcile token changes and persist per-character balances
+    local current = self:GetIronpawTokenCount()
+    if self.ReconcileTokenChange then
+        -- Protect against errors in reconciliation
+        local ok, a, b, c = pcall(function() return self:ReconcileTokenChange(current) end)
+        if not ok then
+            self:Print("[TokenStorage] Error reconciling token change: " .. tostring(a))
+        else
+            -- a,b,c correspond to oldTokens,newTokens,delta (may be nil for oldTokens)
+            -- Update UI after reconciliation
+            self:UpdateIronpawTokens()
+        end
+    else
+        self:UpdateIronpawTokens()
+    end
 end
 
 --[[
@@ -215,7 +237,27 @@ function IronPawProfit:SlashCommand(input)
         self:Print("Scanning auction data...")
     elseif args[1] == "tokens" then
         local tokens = self:GetIronpawTokenCount()
-        self:Print(string.format("Current Ironpaw Tokens: %d", tokens))
+        self:Print(string.format("Current Ironpaw Tokens (this character): %d", tokens))
+        -- Show stored totals if available
+        if IronPawProfitDB and IronPawProfitDB.tokenBalances then
+            local total = 0
+            for key, entry in pairs(IronPawProfitDB.tokenBalances) do
+                if entry and type(entry.tokens) == "number" then
+                    total = total + entry.tokens
+                end
+            end
+            self:Print(string.format("Stored tokens across characters: %d", total))
+            -- Optional: show per-character breakdown
+            for key, entry in pairs(IronPawProfitDB.tokenBalances) do
+                if entry and type(entry.tokens) == "number" then
+                    local age = entry.lastUpdated and (time() - entry.lastUpdated) or nil
+                    local ageText = age and string.format(" (last update: %dh ago)", math.floor(age / 3600)) or ""
+                    self:Print(string.format("  %s: %d%s", key, entry.tokens, ageText))
+                end
+            end
+        else
+            self:Print("No stored token balances found. They will be recorded as you change token counts.")
+        end
     elseif args[1] == "config" then
         -- Show current configuration
         self:ShowConfig()
@@ -775,8 +817,26 @@ function IronPawProfit:UpdateProfitCalculations()
 end
 
 function IronPawProfit:UpdateTokenDisplay(tokens)
-    if self.mainFrame and self.mainFrame.tokenDisplay then
-        self.mainFrame.tokenDisplay.text:SetText(string.format("Ironpaw Tokens: %d", tokens))
+    if not self.mainFrame or not self.mainFrame.tokenDisplay then return end
+    local current = tokens or self:GetIronpawTokenCount()
+    local total = nil
+    if self.GetTotalStoredTokens then
+        local ok, res = pcall(function() return self:GetTotalStoredTokens() end)
+        if ok and type(res) == "number" then
+            total = res
+        end
+    end
+
+    -- Delegate rendering to main frame's UpdateTokenDisplay function
+    if self.mainFrame and self.mainFrame.tokenDisplay and self.MainFrame and self.MainFrame.UpdateTokenDisplay then
+        -- Call the UI module's method to format the display
+        pcall(function() self.MainFrame:UpdateTokenDisplay(current) end)
+    else
+        if total then
+            self.mainFrame.tokenDisplay.text:SetText(string.format("Ironpaw Tokens: %d (Total: %d)", current, total))
+        else
+            self.mainFrame.tokenDisplay.text:SetText(string.format("Ironpaw Tokens: %d", current))
+        end
     end
 end
 

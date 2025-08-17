@@ -4,6 +4,24 @@ All notable changes to the IronPaw Profit Calculator addon are documented here.
 
 This project follows Keep a Changelog and Semantic Versioning.
 
+For full compare links, see the releases on GitHub:
+
+- v1.0.3: https://github.com/TheFlexican/IronPawProfit/compare/v1.0.2...v1.0.3
+- v1.0.2: https://github.com/TheFlexican/IronPawProfit/compare/v1.0.1...v1.0.2
+- v1.0.1: https://github.com/TheFlexican/IronPawProfit/compare/v1.0.0...v1.0.1
+- v1.0.0: https://github.com/TheFlexican/IronPawProfit/releases/tag/v1.0.0
+
+## [1.0.3] - 2025-08-17
+
+### Added
+- Initial release of persistent token storage and reconciliation.
+
+### Changed
+- UI token display updated to show current + total stored tokens.
+
+### Fixed
+- Error handling improvements around token storage.
+
 ## [1.0.1] - 2025-08-15
 
 ### Fixed
@@ -11,8 +29,6 @@ This project follows Keep a Changelog and Semantic Versioning.
   - Registered the frame in `UISpecialFrames`.
   - Resolved a global name collision between the module table and the frame that caused an Esc handler error in UIParent.
   - Added `OnEscapePressed` handlers for input boxes so Esc clears focus and closes the window even when an EditBox is focused.
-
----
 
 ## [1.0.0] - 2025-08-15
 
@@ -29,6 +45,3 @@ This project follows Keep a Changelog and Semantic Versioning.
   - `/ironpaw` or `/ipp` – open the main window
   - `/ironpaw scan` – refresh auction data
   - `/ironpaw tokens` – show current token count
-
-### Notes
-- Auctionator is required for market data.
