@@ -3,7 +3,7 @@
 ## Notes: Analyzes profit from Nam Ironpaw, token generation from Merchant Cheng, and seed planting from Merchant Greenfield. Requires Auctionator.
 ## X-Author: Chifreak
 ## X-Server: Pyrewood Village EU
-## Version: 1.0.6
+## Version: 1.0.7
 ## SavedVariables: IronPawProfitDB
 ## Dependencies: Auctionator
 

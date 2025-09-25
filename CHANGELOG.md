@@ -6,6 +6,11 @@ This project adheres to "Keep a Changelog" and uses Semantic Versioning.
 
 You can view full diffs for each release on GitHub using the links in the References section below.
 
+## [1.0.7] - 2025-09-25
+
+### Changed
+- Fix error with versioning between git and curseforge.
+
 
 ## [1.0.6] - 2025-09-25
 
