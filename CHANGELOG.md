@@ -7,6 +7,11 @@ This project adheres to "Keep a Changelog" and uses Semantic Versioning.
 You can view full diffs for each release on GitHub using the links in the References section below.
 
 
+## [1.0.6] - 2025-09-25
+
+### Changed
+- Updated interface version to 50501 for latest WoW Classic compatibility.
+
 ## [1.0.4] - 2025-08-17
 
 ### Changed
